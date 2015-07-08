@@ -13,7 +13,7 @@ PXXXXr01 ``Lambda Capture *this by Value``
 .. sectnum::
 
 ---------
-Rationale
+Issue
 ---------
 
 Lambda expressions declared within a non-static member function explicilty
@@ -37,32 +37,36 @@ Thus the capture-default has no effect on the capture of **this**.
 
 .. /*
 
-Capturing entities by value allows the implicitly declared closure to be
-copied before invoking the closure's functon.  For example, to copy the
-captured-by-value closure to another NUMA region or GPU memory for
-subsequent execution by processing elements *near* to that memory.
-However, when a lambda expression is declared within a non-static
-member function their is no mechanism available to implicitly capture
+Capturing entities by value allows the implicitly declared
+closure to be copied before invoking the closure's functon.
+For example, to copy the captured-by-value closure to another
+NUMA region or GPU memory for subsequent execution by
+processing elements *near* to that memory.
+However, a lambda expression declared within a non-static
+member function has is no mechanism available to implicitly capture
 **\*this** by value.
+This omission must be resolved to provide true lambda capture-by-value
+that copies non-member entities by value *and* **\*this** by value.
 
-A lambda capture mechanism is required to capture **\*this** by value;
-i.e., all member data of **\*this** are copied by value into the closure.
-Such a mechanism allows a capture-by-value closure to be copied and
-all captured variables to accessed from the copied location.
+-------------------------------------------
+Semantics of Capturing **\*this** by value
+-------------------------------------------
+
+Lambda capture of **\*this** by value within a non-static member function is as if
+- the implicitly generated closure object type were derived from the type of **\*this**,
+- the closure object type were declared a **friend** of the of the type of **\*this**,
+- the **\*this** object is copied into the closure object.
+
 
 ----------------------------------
 Semantically Consistent Resolution
 ----------------------------------
 
-Capture-default by value **[=]** within a non-static member function of a
-containing class implicitly declares a closure object type as if that
-type were derived from and a friend of the containing class.
-Capture by value then copies the containing class into the closure object
-such that all of the member objects are effectively captured by value.
-
-Capture-default by reference **[&]** within a non-static member function of a
-containing class continues to conform to the current specification for
-capture of **this**.
+The semantically consistent resolution is for the *capture-default* **[=]**
+to capture **\*this** by value for lambda expressions within a non-static
+member function.
+The *capture-default* **[&]** within a non-static member function
+would continue to conform to the current capture specification for **this**.
 
 
 .. code-block:: c++
@@ -84,8 +88,9 @@ Resolution to Patch the Specification
 --------------------------------------
 
 Given that the semantically consistent resolution would break
-current standard behavior a new capture mechanism is necessary
-to enable capture of **\*this** by value.
+current standard behavior, a new capture mechanism is necessary
+to provide semantically consistent capture-by-value semantics for
+lambda expressions within non-status member functions.
 
 Extent the *capture-default* and *simple-capture* to include:
 |  *capture-default*:
@@ -99,13 +104,13 @@ Extent the *capture-default* and *simple-capture* to include:
 |    **\*this**
 
 
-The *simple-capture* **\*this** declares that the containing
-class is to be captured by value.
+The *simple-capture* **\*this** declares that **\*this**
+is to be captured by value.
 The *capture-default* \* declares that the default capture
-is by value, including the containing class if the lambda
+is by value, including **\*this** if the lambda
 expression appears within a non-static member function.
-Outside of a non-static member function the \* *capture-default*
-is identical to the = *capture-default*.
+Outside of a non-static member function the *capture-default* \*
+is identical to the *capture-default* =.
 
 
 
