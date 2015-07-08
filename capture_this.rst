@@ -1,5 +1,5 @@
 ===================================================================
-PXXXXr01 ``Lambda Capture by Value of \*this``
+PXXXXr01 ``Lambda Capture *this by Value``
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -25,15 +25,15 @@ Thus the capture-default has no effect on the capture of **this**.
 
 .. code-block:: c++
 
-struct S {
-  int x ;
-  void f() {
-    auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
-    auto b = [=]() { x = 43 ; } // OK: transformed to (*this).x
-    a(); // x == 42
-    b(); // x == 43
-  }
-};
+  struct S {
+    int x ;
+    void f() {
+      auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
+      auto b = [=]() { x = 43 ; } // OK: transformed to (*this).x
+      a(); // x == 42
+      b(); // x == 43
+    }
+  };
 
 .. /*
 
@@ -67,15 +67,15 @@ capture of **this**.
 
 .. code-block:: c++
 
-struct S {
-  int x ;
-  void f() {
-    auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
-    auto b = [=]() { x = 42 ; }
-      // Error: captured copy of '*this'
-      // and lambda function is 'const'
-  }
-};
+  struct S {
+    int x ;
+    void f() {
+      auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
+      auto b = [=]() { x = 42 ; }
+        // Error: captured copy of '*this'
+        // and lambda function is 'const'
+    }
+  };
 
 .. /*
 
