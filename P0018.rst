@@ -1,5 +1,5 @@
 ===================================================================
-PXXXXr01 ``Lambda Capture *this by Value``
+P0018r01 ``Lambda Capture of *this by Value``
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -28,10 +28,13 @@ Thus the capture-default has no effect on the capture of **this**.
   struct S {
     int x ;
     void f() {
+      // The following lambda captures are currently identical
       auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
       auto b = [=]() { x = 43 ; } // OK: transformed to (*this).x
-      a(); // x == 42
-      b(); // x == 43
+      a();
+      assert( x == 42 );
+      b();
+      assert( x == 43 );
     }
   };
 
@@ -53,10 +56,12 @@ Semantics of Capturing **\*this** by value
 -------------------------------------------
 
 Lambda capture of **\*this** by value within a non-static member function is as if
-- the implicitly generated closure object type were derived from the type of **\*this**,
-- the closure object type were declared a **friend** of the of the type of **\*this**,
-- the **\*this** object is copied into the closure object.
-
+- the implicitly generated closure object type is derived from the type of **\*this**,
+- the closure object type is declared a **friend** of the of the type of **\*this**,
+- the closure object type has **using** statements for all
+  members of the type of **\*this** that are accessed within the lambda expression,
+  and
+- the **\*this** object is copy constructed into the closure object.
 
 ----------------------------------
 Semantically Consistent Resolution
@@ -66,7 +71,7 @@ The semantically consistent resolution is for the *capture-default* **[=]**
 to capture **\*this** by value for lambda expressions within a non-static
 member function.
 The *capture-default* **[&]** within a non-static member function
-would continue to conform to the current capture specification for **this**.
+conforms to the current capture specification for **this**.
 
 
 .. code-block:: c++
@@ -75,9 +80,10 @@ would continue to conform to the current capture specification for **this**.
     int x ;
     void f() {
       auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
-      auto b = [=]() { x = 42 ; }
-        // Error: captured copy of '*this'
-        // and lambda function is 'const'
+      auto b = [=]() mutable { x = 42 ; } // Modifying copy of x
+
+      auto c = [=]() { x = 42 ; } // Error: captured copy of '*this'
+                                  // and lambda function is 'const'
     }
   };
 
