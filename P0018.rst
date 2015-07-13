@@ -56,17 +56,16 @@ that copies non-member entities by value *and* **\*this** by value.
 Semantics of Capturing **\*this** by value
 -------------------------------------------
 
-Lambda capture of **\*this** by value within a non-static member function is as if
+Lambda capture of **\*this** by value within a non-static member function is as if:
+
 - the implicitly generated closure object type is derived from the type of **\*this**,
 - the closure object type is declared a **friend** of the of the type of **\*this**,
-- the closure object type has **using** statements for all
-  members of the type of **\*this** that are accessed within the lambda expression,
-  and
+- the closure object type has **using** statements for all members of the type of **\*this** that are accessed within the lambda expression, and
 - the **\*this** object is copy constructed into the closure object.
 
-----------------------------------
-Semantically Consistent Resolution
-----------------------------------
+---------------------------------------
+Resolution Option #1: Correct **[=]**
+---------------------------------------
 
 The semantically consistent resolution is for the *capture-default* **[=]**
 to capture **\*this** by value for lambda expressions within a non-static
@@ -91,7 +90,7 @@ conforms to the current capture specification for **this**.
 .. /*
 
 --------------------------------------
-Resolution to Patch the Specification
+Resolution Option #2: Add **[\*]**
 --------------------------------------
 
 Given that the semantically consistent resolution would break
@@ -99,11 +98,12 @@ current standard behavior, a new capture mechanism is necessary
 to provide semantically consistent capture-by-value semantics for
 lambda expressions within non-status member functions.
 
-Extent the *capture-default* and *simple-capture* to include:
+Extend the *capture-default* and *simple-capture* to include:
+
 |  *capture-default*:
 |     &
 |     =
-|     *
+|     \*
 |  *simple-capture*:
 |    *identifier*
 |    & *identifier*
@@ -113,11 +113,11 @@ Extent the *capture-default* and *simple-capture* to include:
 
 The *simple-capture* **\*this** declares that **\*this**
 is to be captured by value.
-The *capture-default* \* declares that the default capture
+The *capture-default* **[\*]** declares that the default capture
 is by value, including **\*this** if the lambda
 expression appears within a non-static member function.
-Outside of a non-static member function the *capture-default* \*
-is identical to the *capture-default* =.
+Outside of a non-static member function the *capture-default* **[\*]**
+is identical to the *capture-default* **[=]**.
 
 
 
