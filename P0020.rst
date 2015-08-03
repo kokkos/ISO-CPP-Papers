@@ -1,0 +1,63 @@
+===================================================================
+P0020r01 : Floating Point Atomic View
+===================================================================
+
+:Author: H\. Carter Edwards
+:Contact: hcedwar@sandia.gov
+:Author: Hans Boehm
+:Contact: hboehm@google.com
+:Author: Olivier Giroux
+:Contact: ogiroux@nvidia.com
+:Author: James Reus
+:Contact: reus1@llnl.gov
+:Date: 2015-08-03
+:URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
+:WG21: SG1 Concurrency
+
+.. sectnum::
+
+This paper proposes an extension to the atomic operations library [atomics]
+for atomic addition on an object conforming to the *atomic-view-concept* (see P0019, Atomic View)
+instantiated for a floating point type.
+A class conforming to the *atomic-view-concept* shall also provide
+the following operations when T is a floating point (fp) type.
+This capability is critical for high performance computing (HPC) applications.
+We leave open the question of whether the existing class **atomic<T>** should
+be similarly extended when T is a floating point type.
+
+.. code-block:: c++
+
+  template<> struct atomic-view-concept < fp > {
+    void add( fp , memory_order order = memory_order_seq_cst ) const noexcept;
+    void operator+=( fp ) const noexcept;
+  };
+
+..
+
+**void add( fp , memory_order order = memory_order_seq_cst ) const noexcept;**
+
+  Requires: The argument order shall not be memory_order_acquire or memory_order_consume.
+
+  Effects: Atomically replaces the value of the floating point object
+  referenced by the atomic view with the sum of the previous value and fp.
+  Memory is affected according to the value of **order**.
+  This is an atomic read-modify-write operation (1.10).
+  In the event of arithmetic overflow or other floating point exception,
+  the behavior of this operation is implementation defined.
+  [Note: This floating point atomic addition operation deviates from the
+  integral atomic fetch_add by omitting the fetch of the previous value.
+  Omission of a fetch value may allow a better performing implementation.
+  As a result, memory_order_acquire and memory_order_consume are not meaningful.  – end note]
+  [Note: It is a quality-of-implementation as to whether
+  arithmetic overflow or other floating point exception
+  is detectable in the resulting value; *e.g.*, a value of NaN. - end note]
+
+**void operator+=( fp ) const noexcept;**
+
+  Effects: Equivalent to invoking the **add** member function.
+  [Note: The operator omits a return value to avoid conflicting with
+  the mathematically incorrect semantics of the *atomict<integral>*
+  operator **+=** and the mathematically correct semantics of the
+  the standard **+=** operator for floating point types. - end note]
+
+
