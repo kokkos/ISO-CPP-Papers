@@ -64,6 +64,8 @@ Lambda captures of **\*this** by value within a non-static member function is as
 - the closure object type has **using** statements for all members of the type of **\*this** that are accessed within the lambda expression, and
 - the **\*this** object is copy constructed into the closure object.
 
+Requires the type of **\*this** to be copy constructable.
+
 
 Resolution Option #1: Correct Lambda Capture-by-value **[=]**
 ---------------------------------------------------------------------
