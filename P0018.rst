@@ -41,17 +41,24 @@ Thus the capture-default has no effect on the capture of **this**.
 
 .. /*
 
-Capturing entities by value allows the implicitly declared
-closure to be copied before invoking the closure's functon.
-For example, to copy the captured-by-value closure to another
-NUMA region or GPU memory for subsequent execution by
-processing elements *near* to that memory.
-However, a lambda expression declared within a non-static
-member function has is no mechanism available to implicitly capture
-**\*this** by value.
-This omission must be resolved to provide true lambda capture-by-value
-that copies non-member entities by value *and* **\*this** by value.
 
+Motivation for Complete Capture by Value Capability
+-----------------------------------------------------
+
+Capturing by value allows the implicitly declared
+closure to be copied before invoking the closure's functon.
+This capability is necessary for current and future heterogeneous
+architectures when explicitly moving computation to data yields significantly
+better performance than moving data to computation.
+For example moving a closure to the NUMA region, attached accelerator,
+or processing-in-memory that is nearby the data.
+
+A lambda capture by value declaration everywhere except
+within a non-static member function is sufficient.
+The inability for lambda capture of **\*this** by value
+is a hole in the lambda capbility that must be addressed
+for performance portability across contemporary and near-future
+heterogeneous architectures.
 
 
 Semantics of Capturing **\*this** by value
@@ -64,7 +71,7 @@ Lambda captures of **\*this** by value within a non-static member function is as
 - the closure object type has **using** statements for all members of the type of **\*this** that are accessed within the lambda expression, and
 - the **\*this** object is copy constructed into the closure object.
 
-Requires the type of **\*this** to be copy constructable.
+Requires: The type of **\*this** to be copy constructable.
 
 
 Resolution Option #1: Correct Lambda Capture-by-value **[=]**

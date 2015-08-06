@@ -10,7 +10,7 @@ P0019r01 : Atomic View
 :Contact: ogiroux@nvidia.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Date: 2015-08-03
+:Date: 2015-08-06
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
 :WG21: SG1 Concurrency
 
@@ -31,17 +31,13 @@ legacy code which cannot replace that object with a corresponding atomic<T> obje
 and
 (5) motivating use cases and illustrative examples.
 
-.. code-block:: c++
 
-  namespace std {
-  namespace experimental {
-    template< class T > atomic_view ;
-    template< class T > atomic_array_view ;
-    template< class T > atomic_global_view ;
-  }
-  }
-
-..
+  |  namespace std {
+  |  namespace experimental {
+  |    template< class T > atomic_view ;
+  |    template< class T > atomic_array_view ;
+  |    template< class T > atomic_global_view ;
+  |  }}
 
 
 Set of Transitive Copies and its Originating Instance
@@ -91,33 +87,30 @@ The following *atomic-view-concept* specification is included to define requirem
 for classes conforming to the *atomic-view-concept* and does not imply the existiance
 of a template class of this name.
 
-.. code-block:: c++
+  |  template< class T >
+  |  struct *atomic-view-concept* {
+  |    // Functionality matches corresponding member of atomic<T>
+  |    bool is_lock_free() const noexcept;
+  |    void store( T , memory_order = memory_order_seq_cst ) const noexcept;
+  |    T load( memory_order = memory_order_seq_cst ) const noexcept;
+  |    operator T() const noexcept ;
+  |    T exchange( T , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_weak( T& , T , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_strong( T& , T , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_weak( T& , T , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
+  |    T operator=(T) const noexcept ;
+  |
+  |    // Functionality that may exist and deviate from corresponding member of atomic<T>, if any.
+  |    *atomic-view-concept* ();
+  |    *atomic-view-concept* ( const *atomic-view-concept* & );
+  |    *atomic-view-concept* ( *atomic-view-concept* && );
+  |    *atomic-view-concept* & operator = ( const *atomic-view-concept* & );
+  |    *atomic-view-concept* & operator = ( *atomic-view-concept* && );
+  |
+  |    constexpr explicit bool operator() const noexcept;
+  |  };
 
-  template< class T >
-  struct atomic-view-concept {
-    // Functionality matches corresponding memmber of atomic<T>
-    bool is_lock_free() const noexcept;
-    void store( T , memory_order = memory_order_seq_cst ) const noexcept;
-    T load( memory_order = memory_order_seq_cst ) const noexcept;
-    operator T() const noexcept ;
-    T exchange( T , memory_order = memory_order_seq_cst ) const noexcept;
-    bool compare_exchange_weak( T& , T , memory_order , memory_order ) const noexcept;
-    bool compare_exchange_strong( T& , T , memory_order , memory_order ) const noexcept;
-    bool compare_exchange_weak( T& , T , memory_order = memory_order_seq_cst ) const noexcept;
-    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
-    T operator=(T) const noexcept ;
-
-    // Functionality that may exist and deviate from corresponding member of atomic<T>, if any.
-    atomic-view-concept();
-    atomic-view-concept( const atomic-view-concept & );
-    atomic-view-concept( atomic-view-concept && );
-    atomic-view-concept & operator = ( const atomic-view-concept & );
-    atomic-view-concept & operator = ( atomic-view-concept && );
-
-    constexpr explicit bool operator() const noexcept;
-  };
-
-..
 
 Constructors and assignment operators of an *atomic-view-concept* may acquire resources
 such as concurrent locks to support atomic operations on the non-atomic object, and
@@ -137,42 +130,41 @@ These operations replicate the operations on *std::atomic<integral>* [29.5, Atom
 however, operations are const with respect to the atomic view object
 in contrast to the non-const and volatile operations of a **std::atomic<integral>** object.  
 
-.. code-block:: c++
 
-  template<> struct atomic-view-concept < integral > {
+  |  template<> struct *atomic-view-concept* < *integral* > {
+  |
+  |    *integral* fetch_add( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_sub( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_and( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_or(  *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_xor( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |
+  |    *integral* operator++(int) const noexcept;
+  |    *integral* operator--(int) const noexcept;
+  |    *integral* operator++() const noexcept;
+  |    *integral* operator--() const noexcept;
+  |    *integral* operator+=( *integral* ) const noexcept;
+  |    *integral* operator-=( *integral* ) const noexcept;
+  |    *integral* operator&=( *integral* ) const noexcept;
+  |    *integral* operator|=( *integral* ) const noexcept;
+  |    *integral* operator^=( *integral* ) const noexcept;
+  |  };
 
-    integral fetch_add( integral , memory_order = memory_order_seq_cst) const noexcept;
-    integral fetch_sub( integral , memory_order = memory_order_seq_cst) const noexcept;
-    integral fetch_and( integral , memory_order = memory_order_seq_cst) const noexcept;
-    integral fetch_or(  integral , memory_order = memory_order_seq_cst) const noexcept;
-    integral fetch_xor( integral , memory_order = memory_order_seq_cst) const noexcept;
 
-    integral operator++(int) const noexcept;
-    integral operator--(int) const noexcept;
-    integral operator++() const noexcept;
-    integral operator--() const noexcept;
-    integral operator+=( integral ) const noexcept;
-    integral operator-=( integral ) const noexcept;
-    integral operator&=( integral ) const noexcept;
-    integral operator|=( integral ) const noexcept;
-    integral operator^=( integral ) const noexcept;
-  };
-
-..
-
-Note that for consistency the integral operator overloads retain the
-same mathematically incorrect semantics as the **std::atomic<integral>** operator overloads,
-as illustrated here.
+Note that for consistency the *atomic-view-concept*\ **<**\ *integral*\ **>**
+mathematical operator overloads retain the same inconsistency with respect to
+the mathematical operators for the *integral* type,
+as illustrated below.
 
 .. code-block:: c++
 
   int i(0)
-  ++( ++i );
-  assert( i == 2 ); // succeeds
+  ++( ++i );        // ++i returns an lvalue
+  ( i += 1 ) += 2 ; // i+= returns an lvalue
 
   std::atomic<int> ai(0);
-  ++( ++( ai ) );
-  assert( ai == 2 ); // fails due to ai == 1
+  ++( ++( ai ) );    // error: ++ai returns an rvalue
+  ( ai += 1 ) += 2 ; // error: ai+= returns an rvalue
 
 ..
 
@@ -186,20 +178,18 @@ atomic operations on the viewed non-atomic object.
 The intent is for **atomic_view<T>** to provide the
 best-performing implementation of *atomic-view-concept* operations for the type T.  
 
-.. code-block:: c++
 
-  template< class T > struct atomic_view { // conforms to atomic view concept
+  |  template< class T > struct atomic_view { // conforms to atomic view concept
+  |
+  |    explicit atomic_view( T & ); // Originating Constructor is NOT noexcept
+  |
+  |    atomic_view();
+  |    atomic_view( atomic_view && ) noexcept ;
+  |    atomic_view( const atomic_view & ) noexcept ;
+  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    ~atomic_view() noexcept ;
+  |  };
 
-    explicit atomic_view( T & ); // Originating Constructor is NOT noexcept
-
-    atomic_view();
-    atomic_view( atomic_view && ) noexcept ;
-    atomic_view( const atomic_view & ) noexcept ;
-    atomic_view & operator = ( const atomic_view & ) noexcept ;
-    ~atomic_view() noexcept ;
-  };
-
-..
 
 [Note: The intent is for atomic operations of
 *atomic_view<T>* to directly update the referenced object.
@@ -260,30 +250,27 @@ atomic operations on the viewed non-atomic members of the array.
 The intent is for **atomic_array_view<T>** to provide the
 best-performing implementation of atomic-view-concept operations for the members of the array.  
 
-.. code-block:: c++
 
-  template< class T > struct atomic_array_view {
-
-    bool is_lock_free() const noexcept ;
-
-    // Returns true if the view wraps an array and member access is valid.
-    explicit bool operator() const noexcept ;
-
-    atomic_array_view( T * , size_t ); // Originating Constructor is NOT noexcept
-    atomic_array_view() noexcept ;
-    atomic_array_view( atomic_array_view && ) noexcept ;
-    atomic_array_view( const atomic_array_view & ) noexcept ;
-    atomic_array_view & operator = ( const atomic_array_view & ) noexcept ;
-    ~atomic_array_view() noexcept ;
-
-    size_t size() const noexcept ;
-
-    typedef  implementation-defined-atomic-view-concept-type  reference ;
-
-    reference operator[]( size_t ) const noexcept ;
-  };
-
-..
+  |  template< class T > struct atomic_array_view {
+  |
+  |    bool is_lock_free() const noexcept ;
+  |
+  |    // Returns true if the view wraps an array and member access is valid.
+  |    explicit bool operator() const noexcept ;
+  |
+  |    atomic_array_view( T * , size_t ); // Originating Constructor is NOT noexcept
+  |    atomic_array_view() noexcept ;
+  |    atomic_array_view( atomic_array_view && ) noexcept ;
+  |    atomic_array_view( const atomic_array_view & ) noexcept ;
+  |    atomic_array_view & operator = ( const atomic_array_view & ) noexcept ;
+  |    ~atomic_array_view() noexcept ;
+  |
+  |    size_t size() const noexcept ;
+  |
+  |    typedef  implementation-defined-atomic-view-concept-type  reference ;
+  |
+  |    reference operator[]( size_t ) const noexcept ;
+  |  };
 
 [Note: The intent is for atomic operations on members of 
 **atomic_array_view<T>** to directly update the referenced member.
@@ -295,7 +282,6 @@ of obtaining and releasing such resources. – end note]
 **typedef** *implementation-defined-atomic-view-concept-type* **reference;**
 
   The **reference** type conforms to *atomic-view-concept* for type T.
-
 
 **bool atomic_array_view<T>::is_lock_free() const noexcept ;**
 
@@ -317,11 +303,13 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::~atomic_array_view() noexcept ;**
 
-  Effects: If this instance is a member of a set of transitive copies this instance is removed from the set. [Note: If the set will become empty then resources shared by that set should be released. – end note]
+   Effects: If this instance is a member of a set of transitive copies this instance is removed from the set. [Note: If the set will become empty then resources shared by that set should be released. – end note]
 
 **atomic_array_view<T> & atomic_array_view<T>::operator = ( const atomic_array_view & rhs ) noexcept ;**
 
-  Effects: If this instance is a member of a set of transitive copies that instance is removed from the set. [Note: If the set will become empty then resources shared by that set should be released. – end note]  If rhs is a member of a set of transitive copies of atomic_array_view<T> the copy constructed instance is a member of that set.  
+  Effects: If this instance is a member of a set of transitive copies that instance is removed from the set.
+  [Note: If the set will become empty then resources shared by that set should be released. – end note]
+  If rhs is a member of a set of transitive copies of atomic_array_view<T> the copy constructed instance is a member of that set.  
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 
@@ -347,20 +335,17 @@ globally accessible object, as defined by equality of pointers to that object.
 replacing operations on existing non-atomic objects with atomic operations.
 Such replacement may not be able to introduce a set of transitive copies of atomic_view<T>. – end note]
 
-.. code-block:: c++
 
-  template< class T > struct atomic_global_view { // conforms to atomic view concept
-
-    atomic_global_view( T & );  // Wrapping constructor is NOT noexcept
-    atomic_global_view( const atomic_global_view & ) noexcept ;
-    atomic_global_view( atomic_global_view && ) noexcept ;
-    ~atomic_global_view() noexcept ;
-
-    atomic_global_view() = delete ;
-    atomic_global_view & operator = ( const atomic_concurrent__view & ) = delete ;
-  };
-
-..
+  |  template< class T > struct atomic_global_view { // conforms to atomic view concept
+  |
+  |    atomic_global_view( T & );  // Wrapping constructor is NOT noexcept
+  |    atomic_global_view( const atomic_global_view & ) noexcept ;
+  |    atomic_global_view( atomic_global_view && ) noexcept ;
+  |    ~atomic_global_view() noexcept ;
+  |
+  |    atomic_global_view() = delete ;
+  |    atomic_global_view & operator = ( const atomic_concurrent__view & ) = delete ;
+  |  };
 
 [Note: The intent is for atomic operations of **atomic_global_view<T>** to directly update the referenced object. – end note] 
 
@@ -374,9 +359,8 @@ Such replacement may not be able to introduce a set of transitive copies of atom
   [Note: This constructor may obtain a resource as necessary to support atomic operations.
   This constructor is allowed to throw an exception if such a resource could not be obtained. – end note]
 
-**atomic_global_view<T>::atomic_global_view( const atomic_global_view & ) noexcept ;**
-
-**atomic_global_view<T> & atomic_global_view<T>::operator = ( const atomic_global_view & ) noexcept ;**
+| **atomic_global_view<T>::atomic_global_view( const atomic_global_view & ) noexcept ;**
+| **atomic_global_view<T> & atomic_global_view<T>::operator = ( const atomic_global_view & ) noexcept ;**
 
   Effects: If rhs references a globally accessible object then this instance references the same object otherwise this instance does not reference a globally accessible object.
 
@@ -517,62 +501,58 @@ Example:
 ..
 
 
-Mathematically Correct Semantics for Integral Operator Overloads
+Mathematically Consistent Integral Operator Overloads
 ----------------------------------------------------------------------
 
 As previously noted the **std::atomic<**\ *integral*\ **>**
-integral operator overloads are mathematically incorrect and for consistency
-the *atomic-view-concept<integral>* retains these incorrect
-semantics.
-Mathematically correct operator semantics would be restored with the following
+mathematical operator overloads are inconsistent with the mathematical
+operators for *integral*.
+The *atomic-view-concept*\ **<**\ *integral*\ **>** retains these inconsistent
+operator overloads.
+Consistent mathematical operator semantics would be restored with the following
 operator specifications.
 However, such a change would break backward compatibility and is therefore
 only noted and not a proposed change.
 
-.. code-block:: c++
-
-  // Mathematically correct integral operator overloads
-
-  template<> struct atomic < integral > {
-
-    volatile atomic & operator++(int) volatile noexcept ;
-             atomic & operator++(int) noexcept ;
-    volatile atomic & operator--(int) volatile noexcept ;
-             atomic & operator--(int) noexcept ;
-
-    integral operator++() volatile noexcept ;
-    integral operator++() noexcept ;
-    integral operator--() volatile noexcept ;
-    integral operator--() noexcept ;
-
-    volatile atomic & operator+=( integral ) volatile noexcept;
-             atomic & operator+=( integral ) noexcept;
-    volatile atomic & operator-=( integral ) volatile noexcept;
-             atomic & operator-=( integral ) noexcept;
-    volatile atomic & operator&=( integral ) volatile noexcept;
-             atomic & operator&=( integral ) noexcept;
-    volatile atomic & operator|=( integral ) volatile noexcept;
-             atomic & operator|=( integral ) noexcept;
-    volatile atomic & operator^=( integral ) volatile noexcept;
-             atomic & operator^=( integral ) noexcept;
-  };
-
-  template<> struct atomic-view-concept < integral > {
-
-    const atomic-view-concept & operator++(int) const noexcept;
-    const atomic-view-concept & operator--(int) const noexcept;
-
-    integral operator++() const noexcept;
-    integral operator--() const noexcept;
-
-    const atomic-view-concept & operator+=( integral ) const noexcept;
-    const atomic-view-concept & operator-=( integral ) const noexcept;
-    const atomic-view-concept & operator&=( integral ) const noexcept;
-    const atomic-view-concept & operator|=( integral ) const noexcept;
-    const atomic-view-concept & operator^=( integral ) const noexcept;
-  };
-
-..
+|  template<> struct atomic < *integral* > {
+|
+|    volatile atomic & operator++(int) volatile noexcept ;
+|    atomic & operator++(int) noexcept ;
+|    volatile atomic & operator--(int) volatile noexcept ;
+|    atomic & operator--(int) noexcept ;
+|
+|    // fetch-and-increment, fetch-and-decrement operators:
+|    *integral* operator++() volatile noexcept ;
+|    *integral* operator++() noexcept ;
+|    *integral* operator--() volatile noexcept ;
+|    *integral* operator--() noexcept ;
+|
+|    volatile atomic & operator+=( *integral* ) volatile noexcept;
+|    atomic & operator+=( *integral* ) noexcept;
+|    volatile atomic & operator-=( *integral* ) volatile noexcept;
+|    atomic & operator-=( *integral* ) noexcept;
+|    volatile atomic & operator&=( *integral* ) volatile noexcept;
+|    atomic & operator&=( *integral* ) noexcept;
+|    volatile atomic & operator|=( *integral* ) volatile noexcept;
+|    atomic & operator|=( *integral* ) noexcept;
+|    volatile atomic & operator^=( *integral* ) volatile noexcept;
+|    atomic & operator^=( *integral* ) noexcept;
+|  };
+|
+|  template<> struct atomic-view-concept < *integral* > {
+|
+|    const atomic-view-concept & operator++(int) const noexcept;
+|    const atomic-view-concept & operator--(int) const noexcept;
+|
+|    *integral* operator++() const noexcept;
+|    *integral* operator--() const noexcept;
+|
+|    const atomic-view-concept & operator+=( *integral* ) const noexcept;
+|    const atomic-view-concept & operator-=( *integral* ) const noexcept;
+|    const atomic-view-concept & operator&=( *integral* ) const noexcept;
+|    const atomic-view-concept & operator|=( *integral* ) const noexcept;
+|    const atomic-view-concept & operator^=( *integral* ) const noexcept;
+|  };
 
 
 
