@@ -128,14 +128,14 @@ lambda expressions within non-status member functions.
 Extend the *capture-default* and *simple-capture* to include:
 
   |  *capture-default*:
-    |     &
-    |     =
-    |     \*
+  |       &
+  |       =
+  |       \*
   |  *simple-capture*:
-    |    *identifier*
-    |    & *identifier*
-    |    **this**
-    |    **\*this**
+  |      *identifier*
+  |      & *identifier*
+  |      **this**
+  |      **\*this**
 
 
 The *simple-capture* **\*this** declares that **\*this**
