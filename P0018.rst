@@ -6,7 +6,11 @@ P0018r01 : Lambda Capture of \*this by Value
 :Contact: hcedwar@sandia.gov
 :Author: Christian Trott
 :Contact: crtrott@sandia.gov
-:Date: 2015-07-07
+:Author: Robin Maffeo
+:Contact: Robin.Maffeo@amd.com
+:Author: Ben Sander
+:Contact: ben.sander@amd.com
+:Date: 2015-08-19
 :Version: 01
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
 :WG21: Evolution
@@ -53,12 +57,25 @@ better performance than moving data to computation.
 For example moving a closure to the NUMA region, attached accelerator,
 or processing-in-memory that is nearby the data.
 
+Capturing by value improves robustness for the
+asynchronous dispatch of a lambda generated
+within a struct's non-static member function.
+Without capture by value the lifetime of the generating
+**\*this** must exceed the lifetime of the task.
+With capture by value the generating **\*this**
+may be destroyed since the lambda-task captureed
+a copy of **\*this**, as opposed to merely capturing
+the **this** pointer.
+
 A lambda capture by value declaration everywhere except
 within a non-static member function is sufficient.
 The inability for lambda capture of **\*this** by value
 is a hole in the lambda capbility that must be addressed
-for performance portability across contemporary and near-future
-heterogeneous architectures.
+for robustness of asynchronous execution and
+performance portability across contemporary
+and near-future heterogeneous architectures.
+
+
 
 
 Semantics of Capturing **\*this** by value
