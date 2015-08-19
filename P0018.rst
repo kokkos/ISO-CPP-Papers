@@ -63,7 +63,7 @@ within a struct's non-static member function.
 Without capture by value the lifetime of the generating
 **\*this** must exceed the lifetime of the task.
 With capture by value the generating **\*this**
-may be destroyed since the lambda-task captureed
+may be destroyed since the lambda-task captured
 a copy of **\*this**, as opposed to merely capturing
 the **this** pointer.
 
