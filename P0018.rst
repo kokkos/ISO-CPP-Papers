@@ -7,10 +7,10 @@ P0018r01 : Lambda Capture of \*this by Value
 :Author: Christian Trott
 :Contact: crtrott@sandia.gov
 :Author: Robin Maffeo
-:Contact: Robin.Maffeo@amd.com
+:Contact: robin.maffeo@amd.com
 :Author: Ben Sander
 :Contact: ben.sander@amd.com
-:Date: 2015-08-19
+:Date: 2015-09-09
 :Version: 01
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
 :WG21: Evolution
@@ -19,7 +19,7 @@ P0018r01 : Lambda Capture of \*this by Value
 
 
 Issue
----------
+************************************************************************
 
 Lambda expressions declared within a non-static member function explicilty
 or implicitly captures **this** to access to member variables of **this**.
@@ -46,40 +46,117 @@ Thus the capture-default has no effect on the capture of **this**.
 .. /*
 
 
-Motivation for Complete Capture by Value Capability
------------------------------------------------------
+Motivations for lambda capture of **\*this** by Value
+************************************************************************
 
 Capturing by value allows the implicitly declared
 closure to be copied before invoking the closure's functon.
-This capability is necessary for current and future heterogeneous
-architectures when explicitly moving computation to data yields significantly
-better performance than moving data to computation.
-For example moving a closure to the NUMA region, attached accelerator,
-or processing-in-memory that is nearby the data.
 
-Capturing by value improves robustness for the
-asynchronous dispatch of a lambda generated
-within a struct's non-static member function.
-Without capture by value the lifetime of the generating
-**\*this** must exceed the lifetime of the task.
-With capture by value the generating **\*this**
-may be destroyed since the lambda-task captured
-a copy of **\*this**, as opposed to merely capturing
-the **this** pointer.
+Asynchronous dispatch of lambda
+------------------------------------------------------------------------
 
-A lambda capture by value declaration everywhere except
-within a non-static member function is sufficient.
-The inability for lambda capture of **\*this** by value
-is a hole in the lambda capbility that must be addressed
-for robustness of asynchronous execution and
-performance portability across contemporary
-and near-future heterogeneous architectures.
+Asynchronous dispatch of closures a cornerstone of parallelism
+and concurrency.
+
+When a lambda is asynchronously dispatched from within a
+non-static member function, via **std::async**
+or other concurrency / parallelism dispatch mechanism,
+the enclosing **\*this** class *cannot* be captured by value.
+Thus when the **future** (or other handle) to the dispatched lambda
+outlives the originating class the lambda's captured **this**
+pointer is invalid.
+
+.. code-block:: c++
+
+class Work {
+private:
+  int value ;
+public:
+  Work() : value(42) {}
+  std::future<int> spawn()
+    { return std::async( [=]()->int{ return value ; }); }
+};
+
+std::future<int> foo()
+{
+  Work tmp ;
+  return tmp.spawn();
+}
+
+int main()
+{
+  std::future<int> f = foo();
+  f.wait();
+  // The following fails due to the
+  // originating class having been destroyed
+  assert( 42 == f.get() );
+  return 0 ;
+}
+
+..
+
+A potential work-around for this deficiency is to explicitly
+copy the originating class and then capture that copy. 
+
+class Work {
+private:
+  int value ;
+public:
+  Work() : value(42) {}
+  std::future<int> spawn()
+    {
+      Work tmp(*this);
+      return std::async( [=]()->int{ return tmp.value ; });
+    }
+};
+
+.. /*
+
+However, this work-around fails due to the lambda not having
+permission to access the originating class' private member data.
+An additional work-around is required to create a new member
+function to perform the work that is intended for the lambda;
+which defeats the usefulness of the lambda.
+
+
+Dispatch asynchronous closure to data
+------------------------------------------------------------------------
+
+Current and future hardware architectures
+specifically targeting parallelism and concurrency have
+heterogeneous memory systems.
+For example, NUMA regions, attached accelerator memory, and
+processing-in-memory (PIM) stacks.
+In these architectures it will often result in signficantly
+improved performance if the closure is copied to the
+data upon which it operates, as opposed to moving
+the data to and from the closure.
+
+For example, parallel execution of a closure on large data
+spanning NUMA regions will be more performant if a copy
+of that closure residing in the same NUMA region acts
+upon that data.
+For example, a closure dispatched to an attached accelerator
+with separate memory must be copied to the accelerator's
+memory before execution can occur.
+Thus current and future architectures *require* the capability
+to copy closures to data.
+
+
+Productivity in parallelism and concurrency
+------------------------------------------------------------------------
+
+Lambda capability is a signficant boon to productivity,
+especially when parallel or concurrent closures can be
+defined with lambdas as opposed to manually generated functors.
+If the capability to capture **\*this** by value
+is not enabled then the productivity benefits of lambdas
+cannot be fully realized in the parallelism and concurrency domain.
 
 
 
-
-Semantics of Capturing **\*this** by value
--------------------------------------------
+Semantics of Lamda Capture of **\*this** by value
+************************************************************************
 
 Lambda captures of **\*this** by value within a non-static member function is as if:
 
@@ -92,7 +169,7 @@ Requires: The type of **\*this** to be copy constructable.
 
 
 Resolution Option #1: Correct Lambda Capture-by-value **[=]**
----------------------------------------------------------------------
+************************************************************************
 
 The semantically consistent resolution is for the *capture-default* **[=]**
 to capture **\*this** by value for lambda expressions within a non-static
@@ -118,7 +195,7 @@ conforms to the current capture specification for **this**.
 
 
 Resolution Option #2: Add True Lambda Capture-by-value **[\*]**
----------------------------------------------------------------------
+************************************************************************
 
 Given that the semantically consistent resolution would break
 current standard behavior, a new capture mechanism is necessary
