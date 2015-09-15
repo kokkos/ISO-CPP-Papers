@@ -23,6 +23,7 @@ P0018r01 : Lambda Capture of \*this by Value
 .. sectnum::
 
 
+************************************************************************
 Issue
 ************************************************************************
 
@@ -51,10 +52,11 @@ Thus the capture-default has no effect on the capture of **this**.
 .. /*
 
 
+************************************************************************
 Motivations for lambda capture of **\*this** by Value
 ************************************************************************
 
-Capturing by value allows the implicitly declared
+Truly capturing **\*this** by value allows an implicitly declared
 closure to be copied before invoking the closure's functon.
 
 Asynchronous dispatch of lambda
@@ -102,43 +104,6 @@ pointer is invalid.
 
 ..
 
-
-A potential work-around for this deficiency is to explicitly
-copy the originating class and then capture that copy. 
-
-.. code-block:: c++
-
-  class Work {
-  private:
-    int value ;
-  public:
-    Work() : value(42) {}
-    std::future<int> spawn()
-      {
-        Work tmp(*this);
-        // Ambiguous as to whether The generated closure struct
-        // has permission to access the private member 'value'.
-        return std::async( [=]()->int{ return tmp.value ; });
-      }
-  };
-
-.. /*
-
-However, it is ambiguous as to whether the closure generated in
-this work-around has permission to access the originating
-class' private member data.
-An additional work-around may be required to create a new member
-function to perform the work that is intended for the lambda;
-which defeats the usefulness of the lambda.
-Furthermore, this workaround requires (1) an additional copy
-of the originating class: the temporary copy and the capture copy
-and (2) all expressions within the lambda body must reference
-the originating class' members with the temporary object name.
-This work-around, even if supported, is counter-productive
-to introducing asynchronously dispatched lambda expressions
-within existing code.
-
-
 Dispatching asynchronous closures to data
 ------------------------------------------------------------------------
 
@@ -168,6 +133,80 @@ Thus current and future architectures *require* the capability
 to copy closures to data.
 
 
+Onerous work-around
+------------------------------------------------------------------------
+
+A potential work-around for this deficiency is to explicitly
+copy the originating class and then capture that copy. 
+
+.. code-block:: c++
+
+  class Work {
+  private:
+    int value ;
+  public:
+    Work() : value(42) {}
+    std::future<int> spawn()
+      {
+        Work tmp(*this);
+        // Ambiguous as to whether The generated closure struct
+        // has permission to access the private member 'value'.
+        return std::async( [=]()->int{ return tmp.value ; });
+      }
+  };
+
+.. /*
+
+One issue is that it is ambiguous as to whether the closure
+generated in this work-around has permission to access the
+originating class' private member data.
+If the closure does not have the appropriate permission then
+an additional work-around is required to create a new member
+function to perform the work that is intended for the lambda;
+which defeats the usefulness of the lambda.
+This workaround requires
+(1) both the temporary copy and the capture copy of the originating class and
+(2) all expressions within the lambda body must reference
+the originating class' members via the temporary object name.
+
+This work-around is onerous and counter-productive
+to introducing asynchronously dispatched lambda expressions
+within existing code.
+Consder the case of replacing a **for** loop within a 
+non-static member function with a *parallel for each* construct
+as in the parallelism technical specification.
+
+.. code-block:: c++
+
+  class Work {
+  public:
+    void do_something() const {
+      Work tmp(*this);
+      // for ( int i = 0 ; i < N ; ++i )
+      foreach( Parallel , 0 , N , [=]( int i )
+      {
+        // A modestly long loop body where
+        // every reference to a member variable
+        // or member function must be modified for
+        // qualification with 'tmp.'
+      }
+      );
+    }
+  };
+
+..
+
+In this example every reference to a member
+in the pre-existing code must be modified to
+add the **tmp.** qualification.
+This onerous process must be repeated throughout
+an existing code base.
+A true lambda capture of **\*this** would eliminate
+such an onerous process of injecting parallelism
+and concurrency into an large, existing code base.
+
+
+
 Safety and productivity in parallelism and concurrency
 ------------------------------------------------------------------------
 
@@ -177,7 +216,7 @@ A lambda generated within a non-static member function *cannot*
 be a true (self-contained) closure and therefore cannot reliably
 be used with an asynchronous dispatch.
 
-Lambda capability is a signficant boon to productivity,
+Lambda capability is a significant boon to productivity,
 especially when parallel or concurrent closures can be
 defined with lambdas as opposed to manually generated functors.
 If the capability to capture **\*this** by value
@@ -185,6 +224,7 @@ is not enabled then the productivity benefits of lambdas
 cannot be fully realized in the parallelism and concurrency domain.
 
 
+************************************************************************
 Semantics of Lamda Capture of **\*this** by value
 ************************************************************************
 
@@ -197,9 +237,10 @@ Lambda captures of **\*this** by value within a non-static member function is as
 
 Requires: The type of **\*this** to be copy constructable.
 
-Requires: Lambda capture of **\*this** by value does not occur within a copy constructor, or function invoked by a copy constructor, as this would result in a infinite recursion of the copy constructor.
+Requires: Lambda capture of **\*this** by value does not occur within a copy constructor, or function invoked by a copy constructor, as this would result in a infinite recursion of the copy constructor.  This requirement would also be applicable to the onerous work-around.
 
 
+************************************************************************
 Resolution Option #1: Correct Lambda Capture-by-value **[=]**
 ************************************************************************
 
@@ -230,6 +271,7 @@ however, it is likely to break existing code.
 As such we propose the following solution.
 
 
+************************************************************************
 Resolution Option #2: Add True Lambda Capture-by-value **[\*]**
 ************************************************************************
 
@@ -259,6 +301,38 @@ expression appears within a non-static member function.
 Outside of a non-static member function the *capture-default* **[\*]**
 is identical to the *capture-default* **[=]**.
 
+Nested lambda capture
+------------------------------------------------------------------------
+
+A new capture mechanism introduces a introduces new capture interaction.
+For non-**\*this** captures the interactions remain unchanged.
+When **\*this** is captured by value via **[\*]** nested captures
+of **this** refer to the enclosing copy of **\*this**.
+
+.. code-block:: c++
+
+  void Work::foo()
+  {
+    auto x = [*]() { // *this is captured by value
+      auto y = [&]() {
+        // refer to the copy of Work contained in 'x'
+        // does not refer to the original enclosing 'this'
+        this->value
+      };
+      auto z = [=]() {
+        // refer to the copy of Work contained in 'x'
+        // does not refer to the original enclosing 'this'
+        this->value
+      };
+    };
+  }
+
+..
+
+
+Updated example
+------------------------------------------------------------------------
+
 With true lambda capture-by-value the earlier example 
 can have the correct behavior by generating a complete closure.
 
@@ -269,14 +343,27 @@ can have the correct behavior by generating a complete closure.
     int value ;
   public:
     Work() : value(42) {}
+
     std::future<int> spawn()
       // Capture-by-value is correct and the asynchronously
       // dispatched closure may outlive the originating class,
       // and may be freely copied without losing correctness.
       { return std::async( [*]()->int{ return value ; }); }
+
+    // Trivial change to replace 'for' with 'parallel for'
+    void do_something() const {
+      // for ( int i = 0 ; i < N ; ++i )
+      foreach( Parallel , 0 , N , [=]( int i )
+      {
+        // A modestly long loop body where
+        // every reference to a member variable
+        // or member function can be referenced
+        // without modification.
+      }
+      );
+    }
   };
 
 ..
-
 
 
