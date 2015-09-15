@@ -6,14 +6,19 @@ P0018r01 : Lambda Capture of \*this by Value
 :Contact: hcedwar@sandia.gov
 :Author: Christian Trott
 :Contact: crtrott@sandia.gov
+:Author: Hal Finkel
+:Contact: hfinkel@anl.gov
+:Author: Jim Reus
+:Contact: reus1@llnl.gov
 :Author: Robin Maffeo
 :Contact: robin.maffeo@amd.com
 :Author: Ben Sander
 :Contact: ben.sander@amd.com
-:Date: 2015-09-09
+:Date: 2015-09-15
 :Version: 01
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
-:WG21: Evolution
+:WG21: Evolution Working Group (EWG)
+:WG21: Concurrency and Parallelism Study Group (SG1)
 
 .. sectnum::
 
@@ -81,6 +86,8 @@ pointer is invalid.
   {
     Work tmp ;
     return tmp.spawn();
+    // The closure associated with the returned future 
+    // has an implicit this pointer that is invalid.
   }
 
   int main()
@@ -109,20 +116,30 @@ copy the originating class and then capture that copy.
     std::future<int> spawn()
       {
         Work tmp(*this);
+        // Ambiguous as to whether The generated closure struct
+        // has permission to access the private member 'value'.
         return std::async( [=]()->int{ return tmp.value ; });
       }
   };
 
 .. /*
 
-However, this work-around fails due to the lambda not having
-permission to access the originating class' private member data.
-An additional work-around is required to create a new member
+However, it is ambiguous as to whether the closure generated in
+this work-around has permission to access the originating
+class' private member data.
+An additional work-around may be required to create a new member
 function to perform the work that is intended for the lambda;
 which defeats the usefulness of the lambda.
+Furthermore, this workaround requires (1) an additional copy
+of the originating class: the temporary copy and the capture copy
+and (2) all expressions within the lambda body must reference
+the originating class' members with the temporary object name.
+This work-around, even if supported, is counter-productive
+to introducing asynchronously dispatched lambda expressions
+within existing code.
 
 
-Dispatch asynchronous closure to data
+Dispatching asynchronous closures to data
 ------------------------------------------------------------------------
 
 Current and future hardware architectures
@@ -139,15 +156,26 @@ For example, parallel execution of a closure on large data
 spanning NUMA regions will be more performant if a copy
 of that closure residing in the same NUMA region acts
 upon that data.
-For example, a closure dispatched to an attached accelerator
+If true a (self-contained) capture-by-value lambda closure
+were given to a parallel dispatch, such as in the
+parallelism technical specification, then the library could
+create copies of that closure within each NUMA region to improve
+data locality for the parallel computation.
+For another example, a closure dispatched to an attached accelerator
 with separate memory must be copied to the accelerator's
 memory before execution can occur.
 Thus current and future architectures *require* the capability
 to copy closures to data.
 
 
-Productivity in parallelism and concurrency
+Safety and productivity in parallelism and concurrency
 ------------------------------------------------------------------------
+
+As currently specified integration of lambda and concurrency
+capabilities is perilous, as demonstrated by the previous **Work** example.
+A lambda generated within a non-static member function *cannot*
+be a true (self-contained) closure and therefore cannot reliably
+be used with an asynchronous dispatch.
 
 Lambda capability is a signficant boon to productivity,
 especially when parallel or concurrent closures can be
@@ -155,7 +183,6 @@ defined with lambdas as opposed to manually generated functors.
 If the capability to capture **\*this** by value
 is not enabled then the productivity benefits of lambdas
 cannot be fully realized in the parallelism and concurrency domain.
-
 
 
 Semantics of Lamda Capture of **\*this** by value
@@ -169,6 +196,8 @@ Lambda captures of **\*this** by value within a non-static member function is as
 - the **\*this** object is copy constructed into the closure object.
 
 Requires: The type of **\*this** to be copy constructable.
+
+Requires: Lambda capture of **\*this** by value does not occur within a copy constructor, or function invoked by a copy constructor, as this would result in a infinite recursion of the copy constructor.
 
 
 Resolution Option #1: Correct Lambda Capture-by-value **[=]**
@@ -195,6 +224,10 @@ conforms to the current capture specification for **this**.
   };
 
 .. /*
+
+This resolution would correct lambda capture semantics;
+however, it is likely to break existing code.
+As such we propose the following solution.
 
 
 Resolution Option #2: Add True Lambda Capture-by-value **[\*]**
@@ -225,6 +258,25 @@ is by value, including **\*this** if the lambda
 expression appears within a non-static member function.
 Outside of a non-static member function the *capture-default* **[\*]**
 is identical to the *capture-default* **[=]**.
+
+With true lambda capture-by-value the earlier example 
+can have the correct behavior by generating a complete closure.
+
+.. code-block:: c++
+
+  class Work {
+  private:
+    int value ;
+  public:
+    Work() : value(42) {}
+    std::future<int> spawn()
+      // Capture-by-value is correct and the asynchronously
+      // dispatched closure may outlive the originating class,
+      // and may be freely copied without losing correctness.
+      { return std::async( [*]()->int{ return value ; }); }
+  };
+
+..
 
 
 
