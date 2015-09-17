@@ -152,8 +152,8 @@ in contrast to the non-const and volatile operations of a **std::atomic<integral
 
 
 Note that for consistency the *atomic-view-concept*\ **<**\ *integral*\ **>**
-mathematical operator overloads retain the same inconsistency with respect to
-the mathematical operators for the *integral* type,
+mathematical operator overloads retain the same mathematical inconsistency
+with respect to the mathematical operators for the *integral* type,
 as illustrated below.
 
 .. code-block:: c++
@@ -539,19 +539,19 @@ only noted and not a proposed change.
 |    atomic & operator^=( *integral* ) noexcept;
 |  };
 |
-|  template<> struct atomic-view-concept < *integral* > {
+|  template<> struct *atomic-view-concept* < *integral* > {
 |
-|    const atomic-view-concept & operator++(int) const noexcept;
-|    const atomic-view-concept & operator--(int) const noexcept;
+|    const *atomic-view-concept* & operator++(int) const noexcept;
+|    const *atomic-view-concept* & operator--(int) const noexcept;
 |
 |    *integral* operator++() const noexcept;
 |    *integral* operator--() const noexcept;
 |
-|    const atomic-view-concept & operator+=( *integral* ) const noexcept;
-|    const atomic-view-concept & operator-=( *integral* ) const noexcept;
-|    const atomic-view-concept & operator&=( *integral* ) const noexcept;
-|    const atomic-view-concept & operator|=( *integral* ) const noexcept;
-|    const atomic-view-concept & operator^=( *integral* ) const noexcept;
+|    const *atomic-view-concept* & operator+=( *integral* ) const noexcept;
+|    const *atomic-view-concept* & operator-=( *integral* ) const noexcept;
+|    const *atomic-view-concept* & operator&=( *integral* ) const noexcept;
+|    const *atomic-view-concept* & operator|=( *integral* ) const noexcept;
+|    const *atomic-view-concept* & operator^=( *integral* ) const noexcept;
 |  };
 
 

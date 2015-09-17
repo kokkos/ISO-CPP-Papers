@@ -68,7 +68,7 @@ be similarly extended when T is a floating point type.
 
   Returns: fetch\_\ *op*  Atomically, the value of the referenced object immediately before the effects.
 
-  Remark: The **add** and **sub** functions omits returning the value before the effects.
+  Remark: The **add** and **sub** functions omit returning the value before the effects.
   Omission of a return value may allow a better performing implementation.
 
   Remark: In the event of arithmetic overflow or other floating point exception,
@@ -80,7 +80,7 @@ be similarly extended when T is a floating point type.
 | **void operator+=(** *FP* **operand )**
 | **void operator-=(** *FP* **operand )**
 
-  Effects: **+=** performs **add(operand)** and **+=** performs **sub(operand)**
+  Effects: **+=** performs **add(operand)** and **-=** performs **sub(operand)**
 
   Remark: These operators omit a return value to avoid conflicting
   with either the corresponding arithmetic operators for *FP* or
