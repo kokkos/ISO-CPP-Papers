@@ -134,7 +134,7 @@ Thus current and future architectures *require* the capability
 to copy closures to data.
 
 
-Onerous work-around
+Onerous and error-prone work-around
 ------------------------------------------------------------------------
 
 A potential work-around for this deficiency is to explicitly
@@ -160,7 +160,7 @@ First, the **this** pointer is also captured which provides
 a significant opportunity to erroneously reference a
 **this->** member instead of a **tmp.** member.
 Second, it is onerous and counter-productive
-to introduce asynchronously dispatched lambda expressions
+to the introduction of asynchronously dispatched lambda expressions
 within existing code.
 Consder the case of replacing a **for** loop within a 
 non-static member function with a *parallel for each* construct
@@ -344,12 +344,11 @@ can have the correct behavior by generating a complete closure.
     // Trivial change to replace 'for' with 'parallel for'
     void do_something() const {
       // for ( int i = 0 ; i < N ; ++i )
-      foreach( Parallel , 0 , N , [=]( int i )
+      foreach( Parallel , 0 , N , [*]( int i )
       {
         // A modestly long loop body where
-        // every reference to a member variable
-        // or member function can be referenced
-        // without modification.
+        // every reference to a member can be
+        // safely referenced without modification.
       }
       );
     }
