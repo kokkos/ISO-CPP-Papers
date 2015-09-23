@@ -1,5 +1,5 @@
 ===================================================================
-P0020r01 : Floating Point Atomic View
+P0020r00 : Floating Point Atomic View
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -12,7 +12,9 @@ P0020r01 : Floating Point Atomic View
 :Contact: jfb@google.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Date: 2015-08-03
+:Number: P0020
+:Version: 00
+:Date: 2015-09-23
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
 :WG21: SG1 Concurrency
 
