@@ -1,5 +1,5 @@
 ===================================================================
-P0019r00 : Atomic View
+D0019r1 : Atomic View
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -11,8 +11,8 @@ P0019r00 : Atomic View
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Number: P0019
-:Version: 00
-:Date: 2015-09-23
+:Version: 1
+:Date: 2015-10-20
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
 :WG21: SG1 Concurrency
 
@@ -110,7 +110,7 @@ of a template class of this name.
   |    *atomic-view-concept* & operator = ( const *atomic-view-concept* & );
   |    *atomic-view-concept* & operator = ( *atomic-view-concept* && );
   |
-  |    constexpr explicit bool operator() const noexcept;
+  |    constexpr bool operator() const noexcept;
   |  };
 
 
@@ -120,9 +120,9 @@ may track membership in a **set of transitive copies** for the purpose of
 sharing those resources.
 
 
-**constexpr explict bool operator() const noexept ;**
+**constexpr bool operator() const noexept ;**
 
-  Returns if the *atomic-view-concept* object views an object.
+  Returns if the *atomic-view-concept* object wraps a non-null pointer.
   A default constructed *atomic-view-concept* object returns false.
 
 
@@ -203,7 +203,13 @@ obtaining and releasing such a resource.
 
 **atomic_view<T>::atomic_view( T & obj );**
 
-  Requires: The referenced obj must be properly aligned for its type T, otherwise behavior is undefined.
+  Requires: The referenced obj must be properly aligned for its type T,
+  otherwise behavior is undefined.
+
+  Requires: Atomicity only guaranteed among **atomic_view<T>** objects
+  that are members of a **set of transitive copies** with the same
+  originating instance.  Atomicity behavior is undefined between
+  **atomic_view<T>** objects from different **set of transitive copies**.
 
   Effects: This originating constructor wraps the referenced object.
   The constructed instance is the originating member of a
@@ -305,7 +311,7 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::~atomic_array_view() noexcept ;**
 
-   Effects: If this instance is a member of a set of transitive copies this instance is removed from the set. [Note: If the set will become empty then resources shared by that set should be released. – end note]
+   Effects: If this instance is a member of a set of transitive copies this instance is removed from the set. [Note: If the set will become empty then resources shared by that set may be released. – end note]
 
 **atomic_array_view<T> & atomic_array_view<T>::operator = ( const atomic_array_view & rhs ) noexcept ;**
 
@@ -315,9 +321,9 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 
-  Requires: The index i must be in the range [0 .. N-1], otherwise behavior is undefined.
+  Requires: i < N.  The program is ill-formed if I is out of bounds.
 
-  Effects: Return an instance of **reference** type for the member object referenced by the input index i.
+  Returns: An instance of **reference** type for the i-th member of the **atomic_array_view<T>**, where indexing is zero-based.
   [Note: The intent is for efficient generation of the returned instance with respect to obtaining a resource,
   such as a shared locking mechanism, that may be required to support atomic operations on the referenced member. – end note] 
  
@@ -332,6 +338,10 @@ implementation of *atomic-view-concept* operations for the type T.
 All atomic operations on an instance of **atomic_global_view<T>**
 are atomic with respect to any other instance that views the same
 globally accessible object, as defined by equality of pointers to that object. 
+This is in contrast to **atomic_view<T>** where atomicity is only
+guaranteed for objects within the same **set of transitive copies**
+and as such may prevent implementation optimizations;
+e.g., tracking a shared lock.
 
 [Note: Introducing concurrency within legacy codes may require
 replacing operations on existing non-atomic objects with atomic operations.
