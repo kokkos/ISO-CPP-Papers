@@ -283,6 +283,10 @@ current standard behavior, a new capture mechanism is necessary
 to provide semantically consistent capture-by-value semantics for
 lambda expressions within non-status member functions.
 
+Feature test macro
+
+  **__cpp_lambda_capture_this_by_value**
+
 **5.1.2p1:** Extend the *simple-capture* to include **\*this**.
   |  *simple-capture*:
   |      *identifier*
@@ -380,50 +384,21 @@ can have the correct behavior by generating a complete closure.
   public:
     Work() : value(42) {}
 
-    std::future<int> spawn()
-      // Capture-by-value is correct and the asynchronously
-      // dispatched closure may outlive the originating class,
-      // and may be freely copied without losing correctness.
-      { return std::async( [=,*this]()->int{ return value ; }); }
-
-        // new copy of Work from member of closure 'x'
-      }
-    };
-  }
-
-..
-
-
-Updated example
-------------------------------------------------------------------------
-
-With proper lambda capture-by-value the earlier example 
-can have the correct behavior by generating a complete closure.
-
-.. code-block:: c++
-
-  class Work {
-  private:
-    int value ;
-  public:
-    Work() : value(42) {}
-
-    std::future<int> spawn()
-      // Capture-by-value is correct and the asynchronously
-      // dispatched closure may outlive the originating class,
-      // and may be freely copied without losing correctness.
-      { return std::async( [=,*this]()->int{ return value ; }); }
-
-    // Trivial change to replace 'for' with 'parallel for'
-    void do_something() const {
+    // Capture-by-value is correct and the asynchronously
+    // dispatched closure may outlive the originating class,
+    // and may be freely copied without losing correctness.
+    std::future<int> do_something() const {
+      // Trivial change to replace 'for' with asynchronously
+      // dispatched parallel foreach.
       // for ( int i = 0 ; i < N ; ++i )
-      foreach( Parallel , 0 , N , [=,*this]( int i )
-      {
-        // A modestly long loop body where
-        // every reference to a member can be
-        // safely referenced without modification.
-      }
-      );
+      future<int> done =
+        foreach( Parallel , 0 , N , [=,*this]( int i )
+        {
+          // A modestly long loop body where
+          // every reference to a member can be
+          // safely reference the captured (*this.value
+        };
+      return done ;
     }
   };
 
@@ -436,9 +411,8 @@ Possible Follow-on Solution: capture-default **[=\*]**
 
 Assuming that correcting the *capture-default* behavior of **[=]**
 is impractical we seek a *capture-default* expression
-for the true capture-by-value expression **[=,\*this]**.
+to simplify the true capture-by-value expression **[=,\*this]**.
 A possible *capture-default* expression is to let **[=\*]** be
 equivalent to **[=]** outside of a non-static member function
-and **[=,\*this]** within a non-static member function.
-
+and equivalent to **[=,\*this]** within a non-static member function.
 
