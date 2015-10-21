@@ -1,5 +1,5 @@
 ===================================================================
-P0018r00 : Lambda Capture of \*this by Value
+D0018r1 : Lambda Capture of \*this by Value
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -15,8 +15,8 @@ P0018r00 : Lambda Capture of \*this by Value
 :Author: Ben Sander
 :Contact: ben.sander@amd.com
 :Number: P0018
-:Version: 00
-:Date: 2015-09-23
+:Version: 1
+:Date: 2015-10-20
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
 :WG21: Evolution Working Group (EWG)
 :WG21: Concurrency and Parallelism Study Group (SG1)
@@ -114,7 +114,7 @@ specifically targeting parallelism and concurrency have
 heterogeneous memory systems.
 For example, NUMA regions, attached accelerator memory, and
 processing-in-memory (PIM) stacks.
-In these architectures it will often result in signficantly
+In these architectures it will often result in significantly
 improved performance if the closure is copied to the
 data upon which it operates, as opposed to moving
 the data to and from the closure.
@@ -220,23 +220,30 @@ cannot be fully realized in the parallelism and concurrency domain.
 Semantics of Lamda Capture of **\*this** by value
 ************************************************************************
 
-Lambda captures of **\*this** by value within a non-static member function is as if:
+Lambda captures of **\*this** by value within a
+non-static member function is as if:
 
-- the implicitly generated closure object type is derived from the type of **\*this**,
-- the closure object type is declared a **friend** of the of the type of **\*this**,
-- the closure object type has **using** statements for all members of the type of **\*this** that are accessed within the lambda expression, and
-- the **\*this** object is copy constructed into the closure object.
+- the implicitly generated closure object includes a member instance of the type of **\*this**,
+- the enclosing function's **\*this** is copy constructed into the corresponding member of the closure,
+- name lookup (5.1.2p7) of **this**, **\*this**, and non-static members of **\*this** translate to the closure's copy of **\*this**, and
+- if the lambda is not mutable then the closure's copy of **\*this** is **const**.
 
 Requires: The type of **\*this** to be copy constructable.
 
-Requires: Lambda capture of **\*this** by value does not occur within a copy constructor, or function invoked by a copy constructor, as this would result in a infinite recursion of the copy constructor.  This requirement would also be applicable to the onerous work-around.
+Requires: Lambda capture of **\*this** by value
+cannot occur within a copy constructor
+or function invoked by a copy constructor.
+Such a circumstance would result in an
+infinite recursion of the copy constructor.
+Note that his requirement is also applicable to the onerous work-around
+of **[tmp=\*this]**.
 
 
 ************************************************************************
-Resolution Option #1: Correct Lambda Capture-by-value **[=]**
+Impractical Preferred Solution: Correct Lambda Capture-by-value **[=]**
 ************************************************************************
 
-The semantically consistent resolution is for the *capture-default* **[=]**
+The semantically consistent solution is for the *capture-default* **[=]**
 to capture **\*this** by value for lambda expressions within a non-static
 member function.
 The *capture-default* **[&]** within a non-static member function
@@ -258,64 +265,92 @@ conforms to the current capture specification for **this**.
 
 .. /*
 
-This resolution would correct lambda capture semantics;
-however, it is likely to break existing code.
-As such we propose the following solution.
+This solution corrects lambda capture semantics;
+however, it is likely to break existing code
+conforming to the C++11 standard.
+As such we currently consider this solution to be impractical
+and propose the following pragmatic solution.
 
 
 ************************************************************************
-Resolution Option #2: Add True Lambda Capture-by-value **[\*]**
+Pragmatic Solution: Add Lambda Capture-\*this-by-value **[=,\*this]**
 ************************************************************************
 
-Given that the semantically consistent resolution would break
+Given that the semantically consistent preferred solution would break
 current standard behavior, a new capture mechanism is necessary
 to provide semantically consistent capture-by-value semantics for
 lambda expressions within non-status member functions.
 
-Extend the *capture-default* and *simple-capture* to include:
-
-  |  *capture-default*:
-  |       &
-  |       =
-  |       \*
+**5.1.2p1:** Extend the *simple-capture* to include **\*this**.
   |  *simple-capture*:
   |      *identifier*
   |      & *identifier*
   |      **this**
   |      **\*this**
 
+**5.1.2p8:** Revise for capture of **\*this** by value.
+  If a *lambda-capture* includes a *capture-default* that is **=** then
+  the *lambda-capture* shall not contain **this**,
+  the *lambda-capture* may contain **\*this** to capture **\*this** by value,
+  and each remaining identifier the *lambda-capture* contains shall be
+  preceeded by **&**.
+  An identifier, **this**, or **\*this** shall not appear more than
+  once in a *lambda-capture*.
 
-The *simple-capture* **\*this** declares that **\*this**
-is to be captured by value.
-The *capture-default* **[\*]** declares that the default capture
-is by value, including **\*this** if the lambda
-expression appears within a non-static member function.
-Outside of a non-static member function the *capture-default* **[\*]**
-is identical to the *capture-default* **[=]**.
+**5.1.2 new paragraph**
+  Explicit *lambda-capture* of **\*this** requires that
+  the type of **\*this** is copy constructable.
+  A *lambda-capture* of **\*this** within the context of the
+  copy constructor for the type of **\*this** implicitly
+  requires infinite recursion of that copy constructor
+  and is thus ill-formed.
 
-Nested lambda capture
+**5.1.2p10:** Modify for capture of **\*this** by value.
+  An entity (i.e., a variable, **this**, or **\*this**) is said
+  to be ...
+
+**5.1.2p12:** Modify to add **\*this**
+  If a *lambda-expression* odr-uses (3.2) **this**, **\*this**,
+  or a variable with ...
+
+**5.1.12p15:** insert
+  The **\*this** entity is *captured by copy* if it is
+  explicitly captured.
+
+**5.1.12p17:** insert
+  If **\*this** is captured, each odr-use of **\*this** is
+  transformed into an access to the corresponding unnamed
+  data member of the closure type which is of the type of **\*this**.
+  [Note: Thus an odr-use of **\*this** in a nested *lambda-expression*
+  is likewise transformed. --end note]
+
+
+Example for nested lambda expressions
 ------------------------------------------------------------------------
 
 A new capture mechanism introduces a introduces new capture interaction.
 For non-**\*this** captures the interactions remain unchanged.
-When **\*this** is captured by value via **[\*]** nested captures
+When **\*this** is captured by value via **[\*this]** nested captures
 of **this** refer to the enclosing copy of **\*this**.
 
 .. code-block:: c++
 
   void Work::foo()
   {
-    auto x = [*]() { // *this is captured by value
+    auto x = [=,*this]() {
       auto y = [&]() {
-        // refer to the copy of Work contained in 'x'
+        // refer to the copy of Work contained in closure 'x'
         // does not refer to the original enclosing 'this'
         this->value
       };
       auto z = [=]() {
-        // refer to the copy of Work contained in 'x'
+        // refer to the copy of Work contained in closure 'x'
         // does not refer to the original enclosing 'this'
         this->value
       };
+      auto zz = [=,*this]() {
+        // new copy of Work from member of closure 'x'
+      }
     };
   }
 
@@ -325,7 +360,7 @@ of **this** refer to the enclosing copy of **\*this**.
 Updated example
 ------------------------------------------------------------------------
 
-With true lambda capture-by-value the earlier example 
+With proper lambda capture-by-value the earlier example 
 can have the correct behavior by generating a complete closure.
 
 .. code-block:: c++
@@ -340,12 +375,12 @@ can have the correct behavior by generating a complete closure.
       // Capture-by-value is correct and the asynchronously
       // dispatched closure may outlive the originating class,
       // and may be freely copied without losing correctness.
-      { return std::async( [*]()->int{ return value ; }); }
+      { return std::async( [=,*this]()->int{ return value ; }); }
 
     // Trivial change to replace 'for' with 'parallel for'
     void do_something() const {
       // for ( int i = 0 ; i < N ; ++i )
-      foreach( Parallel , 0 , N , [*]( int i )
+      foreach( Parallel , 0 , N , [=,*this]( int i )
       {
         // A modestly long loop body where
         // every reference to a member can be
