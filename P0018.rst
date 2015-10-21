@@ -69,7 +69,7 @@ and concurrency.
 When a lambda is asynchronously dispatched from within a
 non-static member function, via **std::async**
 or other concurrency / parallelism dispatch mechanism,
-the enclosing **\*this** class *cannot* be captured by value.
+the **\*this** object *cannot* be captured by value.
 Thus when the **future** (or other handle) to the dispatched lambda
 outlives the originating class the lambda's captured **this**
 pointer is invalid.
@@ -123,7 +123,7 @@ For example, parallel execution of a closure on large data
 spanning NUMA regions will be more performant if a copy
 of that closure residing in the same NUMA region acts
 upon that data.
-If true a (self-contained) capture-by-value lambda closure
+If a true (self-contained) capture-by-value lambda closure
 were given to a parallel dispatch, such as in the
 parallelism technical specification, then the library could
 create copies of that closure within each NUMA region to improve
@@ -163,7 +163,7 @@ a significant opportunity to erroneously reference a
 Second, it is onerous and counter-productive
 to the introduction of asynchronously dispatched lambda expressions
 within existing code.
-Consder the case of replacing a **for** loop within a 
+Consider the case of replacing a **for** loop within a 
 non-static member function with a *parallel for each* construct
 as in the parallelism technical specification.
 
@@ -267,7 +267,9 @@ conforms to the current capture specification for **this**.
 
 This solution corrects lambda capture semantics;
 however, it is likely to break existing code
-conforming to the C++11 standard.
+conforming to the C++11 standard which depend
+on the copying of the **this** pointer rather
+than copying of the object to which the **this** pointer refers.
 As such we currently consider this solution to be impractical
 and propose the following pragmatic solution.
 
@@ -296,6 +298,7 @@ lambda expressions within non-status member functions.
   preceeded by **&**.
   An identifier, **this**, or **\*this** shall not appear more than
   once in a *lambda-capture*.
+  Both **this** and **\*this** shall not appear in the same *lambda-capture*.
 
 **5.1.2 new paragraph**
   Explicit *lambda-capture* of **\*this** requires that
@@ -328,7 +331,7 @@ lambda expressions within non-status member functions.
 Example for nested lambda expressions
 ------------------------------------------------------------------------
 
-A new capture mechanism introduces a introduces new capture interaction.
+A new capture mechanism introduces a new capture interaction.
 For non-**\*this** captures the interactions remain unchanged.
 When **\*this** is captured by value via **[\*this]** nested captures
 of **this** refer to the enclosing copy of **\*this**.
@@ -338,17 +341,51 @@ of **this** refer to the enclosing copy of **\*this**.
   void Work::foo()
   {
     auto x = [=,*this]() {
+      // this, *this, and member variables of Work refer to
+      // the copy *this contained in closure 'x'
+      // does not refer to the original enclosing 'this'
       auto y = [&]() {
-        // refer to the copy of Work contained in closure 'x'
+        // this, *this, and member variables of Work refer to
+        // the copy *this contained in closure 'x'
         // does not refer to the original enclosing 'this'
-        this->value
       };
       auto z = [=]() {
-        // refer to the copy of Work contained in closure 'x'
+        // this, *this, and member variables of Work refer to
+        // the copy *this contained in closure 'x'
         // does not refer to the original enclosing 'this'
-        this->value
       };
       auto zz = [=,*this]() {
+        // this, *this, and member variables of Work refer to
+        // a new copy *this contained in closure 'z'
+        // that is copied from the copy of *this contained
+        // in the closure 'x'
+      };
+    };
+  }
+
+..
+
+
+Updated example
+------------------------------------------------------------------------
+
+With proper lambda capture-by-value the earlier example 
+can have the correct behavior by generating a complete closure.
+
+.. code-block:: c++
+
+  class Work {
+  private:
+    int value ;
+  public:
+    Work() : value(42) {}
+
+    std::future<int> spawn()
+      // Capture-by-value is correct and the asynchronously
+      // dispatched closure may outlive the originating class,
+      // and may be freely copied without losing correctness.
+      { return std::async( [=,*this]()->int{ return value ; }); }
+
         // new copy of Work from member of closure 'x'
       }
     };
@@ -391,5 +428,17 @@ can have the correct behavior by generating a complete closure.
   };
 
 ..
+
+
+************************************************************************
+Possible Follow-on Solution: capture-default **[=\*]**
+************************************************************************
+
+Assuming that correcting the *capture-default* behavior of **[=]**
+is impractical we seek a *capture-default* expression
+for the true capture-by-value expression **[=,\*this]**.
+A possible *capture-default* expression is to let **[=\*]** be
+equivalent to **[=]** outside of a non-static member function
+and **[=,\*this]** within a non-static member function.
 
 
