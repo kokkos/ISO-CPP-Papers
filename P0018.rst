@@ -1,5 +1,5 @@
 ===================================================================
-D0018r1 : Lambda Capture of \*this by Value
+P0018r1 : Lambda Capture of \*this by Value
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -16,7 +16,7 @@ D0018r1 : Lambda Capture of \*this by Value
 :Contact: ben.sander@amd.com
 :Number: P0018
 :Version: 1
-:Date: 2015-10-20
+:Date: 2015-10-22
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
 :WG21: Evolution Working Group (EWG)
 :WG21: Concurrency and Parallelism Study Group (SG1)
@@ -283,9 +283,10 @@ current standard behavior, a new capture mechanism is necessary
 to provide semantically consistent capture-by-value semantics for
 lambda expressions within non-status member functions.
 
-Feature test macro
+Draft wording
+------------------------------------------------------------------------
 
-  **__cpp_lambda_capture_this_by_value**
+Feature test macro:  **__cpp_lambda_capture_this_by_value**
 
 **5.1.2p1:** Extend the *simple-capture* to include **\*this**.
   |  *simple-capture*:
@@ -373,7 +374,7 @@ of **this** refer to the enclosing copy of **\*this**.
 Updated example
 ------------------------------------------------------------------------
 
-With proper lambda capture-by-value the earlier example 
+With proper lambda capture-by-value the earlier examples
 can have the correct behavior by generating a complete closure.
 
 .. code-block:: c++
@@ -391,14 +392,15 @@ can have the correct behavior by generating a complete closure.
       // Trivial change to replace 'for' with asynchronously
       // dispatched parallel foreach.
       // for ( int i = 0 ; i < N ; ++i )
-      future<int> done =
+      future<int> todo =
         foreach( Parallel , 0 , N , [=,*this]( int i )
         {
-          // A modestly long loop body where
-          // every reference to a member can be
-          // safely reference the captured (*this.value
-        };
-      return done ;
+          // A non-trivial loop body where
+          // every reference to a member is 
+          // safely accessed from the
+          // captured-by-value *this
+        });
+      return todo ;
     }
   };
 
@@ -406,7 +408,7 @@ can have the correct behavior by generating a complete closure.
 
 
 ************************************************************************
-Possible Follow-on Solution: capture-default **[=\*]**
+Follow-up: capture-default **[=\*]**
 ************************************************************************
 
 Assuming that correcting the *capture-default* behavior of **[=]**
