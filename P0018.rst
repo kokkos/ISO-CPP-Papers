@@ -1,5 +1,5 @@
 ===================================================================
-P0018r1 : Lambda Capture of \*this by Value
+P0018r2 : Lambda Capture of \*this by Value
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -15,8 +15,8 @@ P0018r1 : Lambda Capture of \*this by Value
 :Author: Ben Sander
 :Contact: ben.sander@amd.com
 :Number: P0018
-:Version: 1
-:Date: 2015-10-22
+:Version: 2
+:Date: 2015-10-23
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
 :WG21: Evolution Working Group (EWG)
 :WG21: Concurrency and Parallelism Study Group (SG1)
@@ -29,10 +29,11 @@ Issue
 ************************************************************************
 
 Lambda expressions declared within a non-static member function explicilty
-or implicitly captures **this** to access to member variables of **this**.
-Both capture-by-reference **[&]** and capture-by-value **[=]** implicitly
-capture the **this** pointer, therefore member variables are always accessed
-by reference via **this**.
+or implicitly captures the **this** pointer to access to member variables
+of **this**.
+Both capture-by-reference **[&]** and capture-by-value **[=]**
+*capture-defaults* implicitly capture the **this** pointer,
+therefore member variables are always accessed by reference via **this**.
 Thus the capture-default has no effect on the capture of **this**.
 
 .. code-block:: c++
@@ -57,13 +58,13 @@ Thus the capture-default has no effect on the capture of **this**.
 Motivations for lambda capture of **\*this** by Value
 ************************************************************************
 
-Truly capturing **\*this** by value allows an implicitly declared
-closure to be copied before invoking the closure's functon.
+Truly capturing the **\*this** object by value allows an implicitly declared
+closure to be copied before invoking the closure's function.
 
 Asynchronous dispatch of lambda
 ------------------------------------------------------------------------
 
-Asynchronous dispatch of closures a cornerstone of parallelism
+Asynchronous dispatch of closures is a cornerstone of parallelism
 and concurrency.
 
 When a lambda is asynchronously dispatched from within a
@@ -159,7 +160,9 @@ capture a copy the originating class.
 This work-around has two liabilities.
 First, the **this** pointer is also captured which provides
 a significant opportunity to erroneously reference a
-**this->** member instead of a **tmp.** member.
+**this->** *member* instead of a **tmp.** *member*
+as there are two distinct objects in the closure that
+reference two distinct *member* of the same name.
 Second, it is onerous and counter-productive
 to the introduction of asynchronously dispatched lambda expressions
 within existing code.
@@ -286,7 +289,7 @@ lambda expressions within non-status member functions.
 Draft wording
 ------------------------------------------------------------------------
 
-Feature test macro:  **__cpp_lambda_capture_this_by_value**
+Feature test macro:  **__cpp_lambda_capture_this_object_by_value**
 
 **5.1.2p1:** Extend the *simple-capture* to include **\*this**.
   |  *simple-capture*:
@@ -304,6 +307,8 @@ Feature test macro:  **__cpp_lambda_capture_this_by_value**
   An identifier, **this**, or **\*this** shall not appear more than
   once in a *lambda-capture*.
   Both **this** and **\*this** shall not appear in the same *lambda-capture*.
+  When **\*this** object is captured by value the **this** pointer shall 
+  not be captured.
 
 **5.1.2 new paragraph**
   Explicit *lambda-capture* of **\*this** requires that
