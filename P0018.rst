@@ -1,9 +1,11 @@
 ===================================================================
-P0018r2 : Lambda Capture of \*this by Value
+P0018r3 : Lambda Capture of \*this by Value
 ===================================================================
 
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
+:Author: Daveed Vandevoord
+:Contact: daveed@edg.com
 :Author: Christian Trott
 :Contact: crtrott@sandia.gov
 :Author: Hal Finkel
@@ -15,11 +17,10 @@ P0018r2 : Lambda Capture of \*this by Value
 :Author: Ben Sander
 :Contact: ben.sander@amd.com
 :Number: P0018
-:Version: 2
+:Version: 3
 :Date: 2015-10-23
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0018.rst
-:WG21: Evolution Working Group (EWG)
-:WG21: Concurrency and Parallelism Study Group (SG1)
+:WG21: Core
 
 .. sectnum::
 
@@ -243,46 +244,12 @@ of **[tmp=\*this]**.
 
 
 ************************************************************************
-Impractical Preferred Solution: Correct Lambda Capture-by-value **[=]**
-************************************************************************
-
-The semantically consistent solution is for the *capture-default* **[=]**
-to capture **\*this** by value for lambda expressions within a non-static
-member function.
-The *capture-default* **[&]** within a non-static member function
-conforms to the current capture specification for **this**.
-
-
-.. code-block:: c++
-
-  struct S {
-    int x ;
-    void f() {
-      auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x
-      auto b = [=]() mutable { x = 42 ; } // Modifying copy of x
-
-      auto c = [=]() { x = 42 ; } // Error: captured copy of '*this'
-                                  // and lambda function is 'const'
-    }
-  };
-
-.. /*
-
-This solution corrects lambda capture semantics;
-however, it is likely to break existing code
-conforming to the C++11 standard which depend
-on the copying of the **this** pointer rather
-than copying of the object to which the **this** pointer refers.
-As such we currently consider this solution to be impractical
-and propose the following pragmatic solution.
-
-
-************************************************************************
 Pragmatic Solution: Add Lambda Capture-\*this-by-value **[=,\*this]**
 ************************************************************************
 
-Given that the semantically consistent preferred solution would break
-current standard behavior, a new capture mechanism is necessary
+Given that a semantically consistent solution to correct the behavior of
+**[=]** to capture **\*this** by value would break current standard 
+conforming code, a new capture mechanism is necessary
 to provide semantically consistent capture-by-value semantics for
 lambda expressions within non-status member functions.
 
@@ -411,15 +378,4 @@ can have the correct behavior by generating a complete closure.
 
 ..
 
-
-************************************************************************
-Follow-up: capture-default **[=\*]**
-************************************************************************
-
-Assuming that correcting the *capture-default* behavior of **[=]**
-is impractical we seek a *capture-default* expression
-to simplify the true capture-by-value expression **[=,\*this]**.
-A possible *capture-default* expression is to let **[=\*]** be
-equivalent to **[=]** outside of a non-static member function
-and equivalent to **[=,\*this]** within a non-static member function.
 
