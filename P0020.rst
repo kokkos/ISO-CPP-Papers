@@ -1,5 +1,5 @@
 ===================================================================
-P0020r00 : Floating Point Atomic View
+P0020r1 : Floating Point Atomic View
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -13,8 +13,8 @@ P0020r00 : Floating Point Atomic View
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Number: P0020
-:Version: 00
-:Date: 2015-09-23
+:Version: 1
+:Date: 2015-12-01
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
 :WG21: SG1 Concurrency
 
@@ -26,39 +26,45 @@ instantiated for a floating point type.
 A class conforming to the *atomic-view-concept* shall also provide
 the following operations when T is a floating point (FP) type.
 This capability is critical for high performance computing (HPC) applications.
-We leave open the question of whether the existing class **atomic<T>** should
-be similarly extended when T is a floating point type.
-
 
   |  template<> struct atomic< *FP* > {
   |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
   |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) noexcept;
   |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
   |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) noexcept;
-  |    void add( fp operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    void add( fp operand , memory_order order = memory_order_seq_cst ) noexcept;
-  |    void sub( fp operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    void sub( fp operand , memory_order order = memory_order_seq_cst ) noexcept;
-  |    void operator+=( *FP* operand ) volatile noexcept;
-  |    void operator+=( *FP* operand ) noexcept;
-  |    void operator-=( *FP* operand ) volatile noexcept;
-  |    void operator-=( *FP* operand ) noexcept;
+  |    *FP* operator+=( *FP* operand ) volatile noexcept;
+  |    *FP* operator+=( *FP* operand ) noexcept;
+  |    *FP* operator-=( *FP* operand ) volatile noexcept;
+  |    *FP* operator-=( *FP* operand ) noexcept;
   |  };
   |
   |  template<> struct atomic-view-concept < *FP* > {
   |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
   |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
-  |    void add( fp operand , memory_order order = memory_order_seq_cst ) const noexcept;
-  |    void sub( fp operand , memory_order order = memory_order_seq_cst ) const noexcept;
-  |    void operator+=( *FP* operand ) const noexcept;
-  |    void operator-=( *FP* operand ) const noexcept;
+  |    *FP* operator+=( *FP* operand ) const noexcept;
+  |    *FP* operator-=( *FP* operand ) const noexcept;
   |  };
 
+[Note: The additive operator overloads are consistent with the corresponding overloads 
+specified on *std::atomic<integral>* [29.5, Atomic types].
+However, these arithmatic operator overloads are
+inconsistent with the corresponding operators for corresponding
+arithmatic type.
+
+.. code-block:: c++
+
+  double d(0)
+  ( d += 1.0 ) += 2.0 ; // d+= returns an lvalue
+
+  atomic_view<double> ad(d);
+  ( ad += 1.0 ) += 2.0 ; // error: ad+= returns an rvalue
+
+..
+
+  \- end note]
 
 | *FP* **fetch_add(** *FP* **operand , memory_order order = memory_order_seq_cst )**
 | *FP* **fetch_sub(** *FP* **operand , memory_order order = memory_order_seq_cst )**
-| **void add(** *FP* **operand , memory_order order = memory_order_seq_cst )**
-| **void sub(** *FP* **operand , memory_order order = memory_order_seq_cst )**
 
   Requires: The memory order shall not be memory_order_acquire, memory_order_acq_rel, or memory_order_consume.
 
@@ -79,25 +85,12 @@ be similarly extended when T is a floating point type.
   arithmetic overflow or other floating point exception
   is detectable in the resulting value; *e.g.*, a value of NaN.
 
-| **void operator+=(** *FP* **operand )**
-| **void operator-=(** *FP* **operand )**
+** *FP* operator+=(** *FP* **operand )**
 
-  Effects: **+=** performs **add(operand)** and **-=** performs **sub(operand)**
+  Effects: Returns **fetch_add(operand) + operand** .
 
-  Remark: These operators omit a return value to avoid conflicting
-  with either the corresponding arithmetic operators for *FP* or
-  the arithmetic operators for **atomic<integral>**.
-  Note that the arithmetic operators for **atomic<**\ *integral*\ **>**
-  are inconsistent with the corresponding arithmetic operators for *integral*.
+** *FP* operator-=(** *FP* **operand )**
 
-.. code-block:: c++
-
-  int i(0);
-  ( i += 1 ) += 2 ; // i+= returns an lvalue
-
-  atomic<int> ai(0);
-  ( ai += 1 ) += 2 ; // error: i+= returns an rvalue
-
-..
+  Effects: Returns **fetch_sub(operand) - operand** .
 
 
