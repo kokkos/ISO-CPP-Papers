@@ -1,5 +1,5 @@
 ===================================================================
-P0020r1 : Floating Point Atomic View
+D0020r2 : Floating Point Atomic View
 ===================================================================
 
 :Author: H\. Carter Edwards
@@ -13,7 +13,7 @@ P0020r1 : Floating Point Atomic View
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Number: P0020
-:Version: 1
+:Version: 2
 :Date: 2015-12-01
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
 :WG21: SG1 Concurrency
@@ -75,9 +75,6 @@ arithmatic type.
   This is an atomic read-modify-write operation (1.10).
 
   Returns: fetch\_\ *op*  Atomically, the value of the referenced object immediately before the effects.
-
-  Remark: The **add** and **sub** functions omit returning the value before the effects.
-  Omission of a return value may allow a better performing implementation.
 
   Remark: In the event of arithmetic overflow or other floating point exception,
   the behavior of this operation is implementation defined.
