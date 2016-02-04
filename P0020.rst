@@ -1,7 +1,11 @@
 ===================================================================
-D0020r2 : Floating Point Atomic View
+P0020r1 : Floating Point Atomic
 ===================================================================
 
+:Project: ISO JTC1/SC22/WG21: Programming Language C++
+:Number: P0020r1
+:Date: 2016-02-04
+:Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
 :Author: Hans Boehm
@@ -12,11 +16,8 @@ D0020r2 : Floating Point Atomic View
 :Contact: jfb@google.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Number: P0020
-:Version: 2
-:Date: 2015-12-01
+:Audience: SG1 Concurrency
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
-:WG21: SG1 Concurrency
 
 .. sectnum::
 
@@ -38,7 +39,7 @@ This capability is critical for high performance computing (HPC) applications.
   |    *FP* operator-=( *FP* operand ) noexcept;
   |  };
   |
-  |  template<> struct atomic-view-concept < *FP* > {
+  |  template<> struct *atomic-view-concept* < *FP* > {
   |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
   |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
   |    *FP* operator+=( *FP* operand ) const noexcept;
