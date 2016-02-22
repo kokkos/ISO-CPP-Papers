@@ -1,10 +1,10 @@
 ===================================================================
-D0019r1 : Atomic View
+D0019r2 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r1
-:Date: 2016-02-04
+:Number: D0019r2
+:Date: 2016-02-22
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -52,11 +52,11 @@ Atomic View Concept
 -------------------------------------------
 
 A class conforming to the atomic view concept
-provides atomic operations for the viewed non-atomic object.
+provides atomic operations for a referenced non-atomic object.
 These operations replicate the operations on **std::atomic<T>** [29.5, Atomic types];
 however, operations are const with respect to the atomic view object
 in contrast to the non-const and volatile operations of a **std::atomic<T>** object.
-An atomic view does not own (neither exclusively nor shared) the viewed non-atomic object.
+An atomic view does not own (neither exclusively nor shared) the referenced non-atomic object.
 
 The following *atomic-view-concept* specification is included to define requirements
 for classes conforming to the *atomic-view-concept* and does not imply the existiance
@@ -89,8 +89,9 @@ of a template class of this name.
 
   Requires: Type *T* is trivially copyable.
 
-Constructors and assignment operators of an *atomic-view-concept* may acquire shared resources
-such as concurrent locks to support atomic operations on the non-atomic object. and
+Constructors and assignment operators of an *atomic-view-concept*
+may acquire shared resources such as concurrent locks to
+support atomic operations on the non-atomic object.
 
 
 **constexpr bool operator() const noexept ;**
@@ -149,16 +150,18 @@ Atomic View for a Single Object
 -------------------------------------------
 
 An **atomic_view<T>** object is used to perform
-atomic operations on the globally accessible viewed non-atomic object.
+atomic operations on the viewed non-atomic object.
 The intent is for **atomic_view<T>** to provide the best-performing
-implementation of *atomic-view-concept* operations for the type T.
+implementation of *atomic-view-concept* operations for the type **T**.
 All atomic operations on an instance of **atomic_view<T>**
 are atomic with respect to any other instance that views the same
-globally accessible object, as defined by equality of pointers to that object. 
+object, as defined by equality of pointers to that object. 
+
 
 [Note: Introducing concurrency within legacy codes may require
 replacing operations on existing non-atomic objects with atomic operations
-such that the non-atomic object cannot be replaced with a *std::atomic* object. - end note]
+such that the non-atomic object cannot be replaced with a *std::atomic* object.
+- end note]
 
 [Note: An object may be heavily used non-atomically in well-defined phases
 of an application.  Forcing such objects to be exclusively *std::atomic*
@@ -168,18 +171,18 @@ would incur an unnecessary performance penalty.  - end note]
   |
   |    explicit atomic_view( T & ); // wrapping constructor is NOT noexcept
   |
-  |    atomic_view();
+  |    constexpr atomic_view() noexcept ;
   |    atomic_view( atomic_view && ) noexcept ;
   |    atomic_view( const atomic_view & ) noexcept ;
   |    atomic_view & operator = ( atomic_view && ) noexcept ;
   |    atomic_view & operator = ( const atomic_view & ) noexcept ;
-  |    ~atomic_view() noexcept ;
+  |    ~atomic_view();
   |  };
 
   Requires: Type *T* is trivially copyable.
 
 [Note: The intent is for atomic operations of
-*atomic_view<T>* to directly update the referenced object.
+**atomic_view<T>** to directly update the referenced object.
 The *wrapping constructor* may acquire a resource,
 such as a lock from a collection of address-sharded locks,
 to perform atomic operations.
@@ -189,32 +192,59 @@ may reduce overhead by copying or moving the previously
 acquired resource as opposed to re-acquiring that resource.
 – end note] 
 
-**atomic_view<T>::atomic_view();**
+[Note: A **static_assert** diagnostic should be implemented
+if *atomic-view-concept* cannot be supported for type *T*.
+- end note]
 
-  Effects: This instance does not reference a globally accessible object.
+**constexpr atomic_view<T>::atomic_view() noexcept;**
+
+  Effects: This instance does not reference an object and
+  therefore **operator()() == false**.
 
 **atomic_view<T>::atomic_view( T & obj );**
 
-  Requires: The referenced obj must be properly aligned for its type T,
-  otherwise behavior is undefined.
+  Requires: The referenced non-atomic object **obj** must be properly
+  aligned (3.11) for its type T, otherwise behavior is undefined.
 
-  Requires: While any *atomic_view* instance exists for a referenced object
+  Requires: The lifetime (3.8) of an **atomic_view<T>** instance
+  must not exceed the lifetime of the referenced non-atomic object.
+
+  Requires: Multiple instances of an *atomic_view* may be constructed with the
+  wrapping constructor and reference the same object.
+  While any *atomic_view* instance exists for a referenced object
   all accesses of that object shall occur through an *atomic_view* referencing
   that object, otherwise behavior is undefined.
-  Multiple instances of an *atomic_view* may be constructed with the wrapping constructor
-  which reference the same globally accessible object.
 
-  Effects: This wrapping constructor wraps the globally accessible referenced object.
-  Atomic operations on this instance are atomic with respect to atomic operations
-  on any **atomic_view** instance that reference the same globally accessible object.
-  [Note: This constructor is allowed to throw an exception if the referenced object is
-  not properly aligned. - end note]
-  [Note: This constructor may obtain a resource as necessary to support atomic operations.
-  This constructor is allowed to throw an exception if such a resource could not be obtained. – end note]
+  Requires: If the **atomic_view** wrapped object is of a
+  class or aggregate type then members of that object
+  shall not be wrapped by an **atomic_view** object.
 
-  Effects: All accesses of the wrapped object in the same execution context that appear before the 
-  wrapping constructor shall happen before the wrapping constructor completes.
-  [Note: As if a memory fence were performed on the on the wrapped object within the wrapping constructor. - end note]
+  Requires: If an array is wrapped by an **atomic_array_view**
+  then members of that array may not be concurrently wrapped by 
+  an **atomic_view**, unless both the **atomic_array_view**
+  and **atomic_view** types are **is_always_lock_free**.
+
+  Effects: This wrapping constructor references the non-atomic object.
+  Atomic operations on this instance are atomic with respect
+  to atomic operations on any **atomic_view** instance that
+  references the same object.
+  [Note: This constructor is allowed to throw an exception
+  if *atomic-view-concept* operations cannot be supported
+  for the the referenced object.
+  For example, if the referenced object not properly aligned
+  or has automatic storage duration within an accelerator
+  coprocessor (*e.g.*, a GPGPU) execution context. - end note]
+  [Note: This constructor may obtain a resource as necessary to
+  support atomic operations, for example a lock associated with
+  the referenced object's address.
+  This constructor is allowed to throw an exception
+  if such a resource could not be obtained. – end note]
+
+  Effects: All accesses of the wrapped object in the same execution context
+  that appear before the wrapping constructor shall happen before
+  the wrapping constructor completes.
+  [Note: As if a memory fence were performed on the on the
+  wrapped object within the wrapping constructor. - end note]
 
 .. code-block:: c++
 
@@ -231,15 +261,15 @@ acquired resource as opposed to re-acquiring that resource.
 | **atomic_view<T> & atomic_view<T>::operator = ( atomic_view && rhs ) noexcept ;**
 | **atomic_view<T> & atomic_view<T>::operator = ( const atomic_view & rhs ) noexcept ;**
 
-  Effects: If *rhs* references a globally accessible object
+  Effects: If *rhs* references an object
   then this instance references the same object otherwise
-  this instance does not reference a globally accessible object.
+  this instance does not reference an object.
   [Note: If *rhs* holds a resource to support atomic operations
   then that resource should be copied or moved as appropriate. - end note]
 
 **atomic_view<T>::~atomic_view() noexcept ;**
 
-  Effects: This instance does not reference a globally accessible object.
+  Effects: This instance does not reference an object.
   [Note: If this instances holds a resource to support atomic operations
   then that resource should be released or destroyed as appropriate. - end note]
 
@@ -276,12 +306,12 @@ best-performing implementation of atomic-view-concept operations for the members
   |    explicit bool operator() const noexcept ;
   |
   |    atomic_array_view( T * , size_t ); // Wrapping constructor is NOT noexcept
-  |    atomic_array_view() noexcept ;
+  |    constexpr atomic_array_view() noexcept ;
   |    atomic_array_view( atomic_array_view && ) noexcept ;
   |    atomic_array_view( const atomic_array_view & ) noexcept ;
   |    atomic_array_view & operator = ( atomic_array_view && ) noexcept ;
   |    atomic_array_view & operator = ( const atomic_array_view & ) noexcept ;
-  |    ~atomic_array_view() noexcept ;
+  |    ~atomic_array_view();
   |
   |    size_t size() const noexcept ;
   |
@@ -311,32 +341,50 @@ of obtaining and releasing such resources. – end note]
 
   Effects: Whether atomic operations on members are (always) lock free.
 
+**constexpr atomic_array_view<T>::atomic_array_view() noexcept;**
+
+  Effects: The constructed **atomic_array_view** does not reference
+  an array and therefore **size() == 0**.
+
 **atomic_array_view<T>::atomic_array_view( T * ptr , size_t N );**
 
-  Requires: The array referenced by [ptr .. ptr+N-1] must be properly aligned for its type T, otherwise behavior is undefined.
+  Requires: If 0 < N the array referenced by [ptr .. ptr+N-1] must be
+  properly aligned for its type T, otherwise behavior is undefined.
 
-  Requires: While any *atomic_array_view* instance exists for a referenced array
-  all accesses of that array and its members shall occur through an *atomic_array_view* referencing
+  Requires: While any *atomic_array_view* instance exists for a
+  referenced array all accesses of that array and its members
+  shall occur through an *atomic_array_view* referencing
   that array, otherwise behavior is undefined.
-  Multiple concurrent instances of an *atomic_array_view* may be constructed with the wrapping constructor
-  which references any of the any globally accessible members (i.e., has an overlapping range)
-  if-and-only-if the *atomic_array_view* type **is_always_lock_free**.
-  If NOT **is_always_lock_free** then construction of multiple concurrent instances
-  via the wrapping constructor has undefined behavior.
-  [Note: This allows a non-lock-free *atomic_array_view* to acquire a set of locks
-  that are exclusively associated with the wrapped array. - end note]
+  Multiple concurrent instances of an *atomic_array_view*
+  or *atomic_view* may be constructed with the wrapping constructors
+  which references any of the any members (i.e., has an overlapping range)
+  if-and-only-if the *atomic_array_view* and *atomic_view* types are
+  **is_always_lock_free**.
+  If NOT **is_always_lock_free** then construction of
+  multiple concurrent instances
+  via the wrapping constructors has undefined behavior.
+  [Note: This allows a non-lock-free *atomic_array_view* to
+  acquire a set of locks that are exclusively associated
+  with the wrapped array. - end note]
 
-  Effects: The *wrapping constructor* wraps the referenced globally accessible array [ptr .. ptr+N-1].
-  Atomic operations on members of this instance are atomic with respect to atomic operations
-  on members any **atomic_array_view** instance that references the same globally accessible array.
-  [Note: This constructor is allowed to throw an exception if the referenced array is
-  not properly aligned. - end note]
-  [Note: This constructor may obtain resources as necessary to support atomic operations on members.
-  This constructor is allowed to throw an exception if such resources could not be obtained. – end note]
+  Effects: If 0 < N the *wrapping constructor* wraps the referenced
+  array [ptr .. ptr+N-1]; otherwise the **atomic_array_view** does
+  not reference an array.
+  Atomic operations on members of this instance are atomic with
+  respect to atomic operations on members any **atomic_array_view**
+  instance that references the same array.
+  [Note: This constructor is allowed to throw an exception
+  if the referenced array is not properly aligned. - end note]
+  [Note: This constructor may obtain resources as necessary to
+  support atomic operations on members.
+  This constructor is allowed to throw an exception
+  if such resources could not be obtained. – end note]
 
-  Effects: All accesses of the wrapped array members in the same execution context that appear before the 
+  Effects: All accesses of the wrapped array members
+  in the same execution context that appear before the 
   wrapping constructor shall happen before the wrapping constructor completes.
-  [Note: As if a memory fence were performed on the wrapped array within the wrapping constructor. - end note]
+  [Note: As if a memory fence were performed on the wrapped array
+  within the wrapping constructor. - end note]
 
 .. code-block:: c++
 
@@ -359,9 +407,9 @@ of obtaining and releasing such resources. – end note]
 | **atomic_array_view<T> & atomic_array_view<T>::operator = ( atomic_array_view && rhs ) noexcept ;**
 | **atomic_array_view<T> & atomic_array_view<T>::operator = ( const atomic_array_view & rhs ) noexcept ;**
 
-  Effects: If *rhs* references a globally accessible array
+  Effects: If *rhs* references an array
   then this instance references the same array otherwise
-  this instance does not reference a globally accessible object.
+  this instance does not reference a array.
   [Note: If *rhs* holds resources to support atomic operations
   then that resource should be copied or moved as appropriate.
   It may be appropriate for these resources to be managed
@@ -369,13 +417,13 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::~atomic_array_view() noexcept ;**
 
-  Effects: This instance does not reference a globally accessible object.
+  Effects: This instance does not reference an array.
   [Note: If this instances holds resources to support atomic operations
   then those resources should be released or destroyed as appropriate. - end note]
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 
-  Requires: i < N.  The program is ill-formed if I is out of bounds.
+  Requires: i < size(), otherwise behavior is undefined.
 
   Requires: The returned **reference** object must be destroyed or
   re-assigned before the last associated *atomic_array_view* instance
