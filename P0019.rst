@@ -203,17 +203,17 @@ if *atomic-view-concept* cannot be supported for type *T*.
 
 **atomic_view<T>::atomic_view( T & obj );**
 
-  Requires: The referenced non-atomic object **obj** must be properly
-  aligned (3.11) for its type T, otherwise behavior is undefined.
+  Requires: The referenced non-atomic object **obj** shall be properly
+  aligned (3.11) for its type T.
 
   Requires: The lifetime (3.8) of an **atomic_view<T>** instance
-  must not exceed the lifetime of the referenced non-atomic object.
+  shall not exceed the lifetime of the referenced non-atomic object.
 
   Requires: Multiple instances of an *atomic_view* may be constructed with the
   wrapping constructor and reference the same object.
   While any *atomic_view* instance exists for a referenced object
   all accesses of that object shall occur through an *atomic_view* referencing
-  that object, otherwise behavior is undefined.
+  that object.
 
   Requires: If the **atomic_view** wrapped object is of a
   class or aggregate type then members of that object
@@ -348,13 +348,13 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::atomic_array_view( T * ptr , size_t N );**
 
-  Requires: If 0 < N the array referenced by [ptr .. ptr+N-1] must be
-  properly aligned for its type T, otherwise behavior is undefined.
+  Requires: If 0 < N the array referenced by [ptr .. ptr+N-1] shall be
+  properly aligned for its type T.
 
   Requires: While any *atomic_array_view* instance exists for a
   referenced array all accesses of that array and its members
   shall occur through an *atomic_array_view* referencing
-  that array, otherwise behavior is undefined.
+  that array.
   Multiple concurrent instances of an *atomic_array_view*
   or *atomic_view* may be constructed with the wrapping constructors
   which references any of the any members (i.e., has an overlapping range)
@@ -423,11 +423,11 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 
-  Requires: i < size(), otherwise behavior is undefined.
+  Requires: i < size().
 
-  Requires: The returned **reference** object must be destroyed or
+  Requires: The returned **reference** object shall be destroyed or
   re-assigned before the last associated *atomic_array_view* instance
-  is destroyed, otherwise behavior is undefined.
+  is destroyed.
 
   Returns: An instance of **reference** type for the i-th member of the **atomic_array_view**, where indexing is zero-based.
   [Note: The intent is for efficient generation of the returned object with respect to obtaining a resource,
@@ -503,7 +503,7 @@ he atomic_array_view would or would not track resizing operations applied to the
 
 Implementation note for **atomic_array_view<T>**
 
-  All non-atomic accesses of array members that appear before the wrapping constructor must happen before subsequent atomic operations on the atomic_array_view members.  For example:
+  All non-atomic accesses of array members that appear before the wrapping constructor shall happen before subsequent atomic operations on the atomic_array_view members.  For example:
 
 .. code-block:: c++
 
@@ -511,7 +511,7 @@ Implementation note for **atomic_array_view<T>**
     i[0] = 42 ;
     i[N-1] = 42 ;
     atomic_array_view<int> ai(i,N);
-    // Operations on ‘i’ must happen before operations on ‘ai’
+    // Operations on ‘i’ shall happen before operations on ‘ai’
     foreach( parallel_policy, 0, M, [=]( int j ){ ++ai[j%N] ; } );
   }
 
