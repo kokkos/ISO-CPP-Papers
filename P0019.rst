@@ -4,7 +4,7 @@ D0019r2 : Atomic View
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: D0019r2
-:Date: 2016-02-22
+:Date: 2016-03-01
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -64,7 +64,7 @@ of a template class of this name.
 
   |  template< class T >
   |  struct *atomic-view-concept* {
-  |    // The following member interfaces match the corresponding members of atomic<T> and P0152R0
+  |    // The following member interface specifications match the corresponding member specifications of atomic<T> and P0152R0
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
   |    bool is_lock_free() const noexcept;
   |    void store( T , memory_order = memory_order_seq_cst ) const noexcept;
@@ -176,22 +176,26 @@ would incur an unnecessary performance penalty.  - end note]
   |    ~atomic_view();
   |  };
 
-  Requires: Type *T* is trivially copyable.
+  Requires: Type *T* is trivially copyable and object of type *T*
+  can have alignment suitable for *atomic-view-concept* operations.
+  [Note: For example, if type *T* is **char** then it may be infeasible to
+  correctly implement *atomic-view-concept* operations when non-atomic
+  operations could be applied to a **char** object adjacent in memory.
+  A **static_assert** diagnostic should be generated
+  if **atomic_view** cannot be supported for an object of type *T*.
+  - end note]
 
-[Note: The intent is for atomic operations of
-**atomic_view<T>** to directly update the referenced object.
+[Note: The intent is for *atomic-view-concept* operations
+to directly update the referenced object.
 The *wrapping constructor* may acquire a resource,
 such as a lock from a collection of address-sharded locks,
 to perform atomic operations.
+Such **atomic_view** objects are not lock-free and not address-free.
 When such a resource is necessary subsequent
 copy and move constructors and assignment operators
 may reduce overhead by copying or moving the previously
 acquired resource as opposed to re-acquiring that resource.
 – end note] 
-
-[Note: A **static_assert** diagnostic should be implemented
-if *atomic-view-concept* cannot be supported for type *T*.
-- end note]
 
 **constexpr atomic_view<T>::atomic_view() noexcept;**
 
@@ -316,6 +320,12 @@ best-performing implementation of atomic-view-concept operations for the members
 
   Requires: Type *T* is trivially copyable.
 
+[Note: Implementation of an **atomic_array_view** may be
+feasible for a contiguously allocated set of objects of type *T*,
+such as **char**, even when not feasible
+for an **atomic_view** implementation for *T*.
+- end note]
+
 [Note: The *wrapping constructor* may acquire resources,
 such as a set of locks, to perform atomic operations.
 When such a resource is necessary subsequent
@@ -345,6 +355,14 @@ of obtaining and releasing such resources. – end note]
   Requires: If 0 < N the array referenced by [ptr .. ptr+N-1] shall
   satisfy alignment requirements for its type T (3.11) and
   shall be within a contiguously allocated set of objects (8.3.4p1).
+  The contiguously allocated set of objects shall have alignment
+  suitable for *atomic-view-concept* operations.
+  [Note: For example, if type *T* is **char** then the contiguously
+  allocated set of **char** objects must be aligned such that
+  non-atomic operations on object immediately preceding or following
+  the set in memory will not interfere with *atomic-view-concept*
+  operations on the wrapped array.
+  - end note]
 
   Requires: While any *atomic_array_view* instance exists for a
   referenced array all accesses of that array and its members
@@ -363,8 +381,8 @@ of obtaining and releasing such resources. – end note]
   with the wrapped array. - end note]
 
   Effects: If 0 < N the *wrapping constructor* wraps the referenced
-  contiguously allocated array [ptr .. ptr+N-1]; otherwise the **atomic_array_view** does
-  not reference an array.
+  contiguously allocated array [ptr .. ptr+N-1];
+  otherwise the **atomic_array_view** does not reference an array.
   Atomic operations on members of this instance are atomic with
   respect to atomic operations on members any **atomic_array_view**
   instance that references the same array.
