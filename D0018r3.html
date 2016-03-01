@@ -1,0 +1,377 @@
+<html>
+<head>
+<title>Capturing <tt>*this</tt></title>
+<style type="text/css">
+blockquote.std { color: #000000; background-color: #F1F1F1;
+                 border: 1px solid #D1D1D1;
+                 padding-left: 0.5em; padding-right: 0.5em; }
+blockquote.stddel { text-decoration: line-through;
+                    color: #000000; background-color: #FFA0A0;
+                    border: 1px solid #ECD7EC;
+                    padding-left: 0.5em; padding-right: 0.5em; }
+
+blockquote.stdins { color: #000000; background-color: #A0FFA0;
+                    border: 1px solid #B3EBB3; padding: 0.5em; }
+
+blockquote.stdrepl { color: #000000; background-color: #FFFFA0;
+                    border: 1px solid #EBEBB3; padding: 0.5em; }
+
+
+ins { background-color:#A0FFA0; text-decoration: none }
+del { background-color:#FFA0A0; text-decoration: line-through; }
+#hidedel:checked ~ * del, #hidedel:checked ~ * del * { display:none; visibility:hidden }
+
+tab { padding-left: 4em; }
+tab3 { padding-left: 3em; }
+</style>
+</head>
+<body>
+
+<HR>
+
+<h2>Lambda Capture of <tt>*this</tt> by Value as <tt>[=,*this]</tt></h2>
+
+<p align=left><b>D0018R3, 2016-03-01</b></p>
+
+<p align=left>
+<br/>Authors:
+<br/>H. Carter Edwards (hcedwar@sandia.gov)
+<br/>Daveed Vandevoorde (daveed@edg.com)
+<br/>Christian Trott (crtrott@sandia.gov)
+<br/>Hal Finkel (hfinkel@anl.gov)
+<br/>Jim Reus (reus1@llnl.gov)
+<br/>Robin Maffeo (robin.maffeo@amd.com)
+<br/>Ben Sander (ben.sander@amd.com)
+</p>
+
+<p align=left>
+<br/>Audience:
+<br/>Evolution Working Group (EWG)
+<br/>Core Working Group (CWG)
+</p>
+
+
+<HR>
+
+<h3>Issue: Lambda expressions cannot capture <tt>*this</tt> by value</h3>
+
+<p>
+Lambda expressions declared within a non-static member function explicilty
+or implicitly captures the <tt>this</tt> pointer to access to member variables
+of <tt>this</tt>.
+Both capture-by-reference <tt>[&]</tt>
+and capture-by-value <tt>[=]</tt>
+<i>capture-defaults</i> implicitly capture the <tt>this</tt> pointer,
+therefore member variables are always accessed by reference via <tt>this</tt>.
+Thus the capture-default has no effect on the capture of <tt>this</tt>.
+</p>
+
+<blockquote class="std"><tt>
+struct S {<br/>
+<tab>int x ;<br/>
+<tab>void f() {<br/>
+<tab><tab>// The following lambda captures are currently identical<br/>
+<tab><tab>auto a = [&]() { x = 42 ; } // OK: transformed to (*this).x<br/>
+<tab><tab>auto b = [=]() { x = 43 ; } // OK: transformed to (*this).x<br/>
+<tab><tab>a();<br/>
+<tab><tab>assert( x == 42 );<br/>
+<tab><tab>b();<br/>
+<tab><tab>assert( x == 43 );<br/>
+<tab>}<br/>
+};<br/>
+</tt>
+</blockquote>
+
+<p>
+Asynchronous dispatch of closures is a cornerstone of parallelism
+and concurrency.
+When a lambda is asynchronously dispatched from within a
+non-static member function, via <tt>std::async</tt>
+or other concurrency / parallelism dispatch mechanism,
+the <tt>*this</tt> object <i>cannot</i> be captured by value.
+Thus when the <tt>std::future</tt> (or other handle) to the dispatched lambda
+outlives the originating class the lambda's captured <tt>this</tt>
+pointer is invalid.
+</p>
+
+<blockquote class="std"><tt>
+class Work {</br>
+private:</br>
+<tab>int value ;</br>
+public:</br>
+<tab>Work() : value(42) {}</br>
+<tab>std::future<int> spawn()</br>
+<tab>  { return std::async( [=]()->int{ return value ; }); }</br>
+};</br>
+</br>
+std::future<int> foo()</br>
+{</br>
+<tab>Work tmp ;</br>
+<tab>return tmp.spawn();</br>
+<tab>// The closure associated with the returned future</br>
+<tab>// has an implicit this pointer that is invalid.</br>
+}</br>
+</br>
+int main()</br>
+{</br>
+<tab>std::future<int> f = foo();</br>
+<tab>f.wait();</br>
+<tab>// The following fails due to the</br>
+<tab>// originating class having been destroyed</br>
+<tab>assert( 42 == f.get() );</br>
+<tab>return 0 ;</br>
+}</br>
+</tt></blockquote>
+
+<p>
+Current and future hardware architectures
+specifically targeting parallelism and concurrency have
+heterogeneous memory systems.
+For example, NUMA regions, attached accelerator memory, and
+processing-in-memory (PIM) stacks.
+In these architectures it will often result in significantly
+improved performance if the closure is copied to the
+data upon which it operates, as opposed to moving
+the data to and from the closure.
+</p>
+
+<p>
+For example, parallel execution of a closure on large data
+spanning NUMA regions will be more performant if a copy
+of that closure residing in the same NUMA region acts
+upon that data.
+If a full (self-contained) capture-by-value lambda closure
+were given to a parallel dispatch, such as in the
+parallelism technical specification, then the library could
+create copies of that closure within each NUMA region to improve
+data locality for the parallel computation.
+For another example, a closure dispatched to an attached accelerator
+with separate memory must be copied to the accelerator's
+memory before execution can occur.
+Thus current and future architectures *require* the capability
+to copy closures to data.
+</p>
+
+
+<h3>Error-prone and onerous work-around: <tt>[=,tmp=*this]</tt></h3>
+
+<p>
+A potential work-around for this deficiency is to explicitly
+capture a copy the originating class.
+</p>
+
+<blockquote class="std"><tt>
+class Work {</br>
+private:</br>
+<tab>int value ;</br>
+public:</br>
+<tab>Work() : value(42) {}</br>
+<tab>std::future<int> spawn()</br>
+<tab>{</br>
+<tab><tab>return std::async( [=,tmp=*this]()->int{ return tmp.value ; });</br>
+<tab>}</br>
+};</br>
+</tt></blockquote>
+
+<p>
+This work-around has two liabilities.
+First, the <tt>this</tt> pointer is also captured which provides
+a significant opportunity to erroneously reference a
+<tt>this-></tt><i>member</i> instead of a <tt>tmp.</tt><i>member</i>
+as there are two distinct objects in the closure that
+reference two distinct <i>member</i> of the same name.
+Second, it is onerous and counter-productive
+to the introduction of asynchronously dispatched lambda expressions
+within existing code.
+Consider the case of replacing a <tt>for</tt> loop within a
+non-static member function with a <i>parallel for each</i> construct
+as in the parallelism technical specification.
+</p>
+
+<blockquote class="std"><tt>
+class Work {</br>
+public:</br>
+<tab>void do_something() const {</br>
+<tab><tab>// for ( int i = 0 ; i < N ; ++i )</br>
+<tab><tab>foreach( Parallel , 0 , N , [=,tmp=*this]( int i )</br>
+<tab><tab>{</br>
+<tab><tab><tab>// A modestly long loop body where</br>
+<tab><tab><tab>// every reference to a member must be modified</br>
+<tab><tab><tab>// for qualification with 'tmp.'</br>
+<tab><tab><tab>// Any mistaken omissions will silently fail</br>
+<tab><tab><tab>// as references via 'this->'.</br>
+<tab><tab>}</br>
+<tab><tab>);</br>
+<tab>}</br>
+};</br>
+</tt></blockquote>
+
+<p>
+In this example every reference to a member
+in the pre-existing code must be modified to
+add the <tt>tmp.</tt> qualification.
+This onerous process must be repeated throughout
+an existing code base.
+A full lambda capture of <tt>*this</tt> would eliminate
+such an onerous and silent-error-prone process of
+injecting parallelism
+and concurrency into an large, existing code base.
+
+
+<p>
+As currently specified integration of lambda and concurrency
+capabilities is perilous, as demonstrated by the previous <tt>Work</tt> example.
+A lambda generated within a non-static member function <i>cannot</i>
+be a full (self-contained) closure and therefore cannot reliably
+be used with an asynchronous dispatch.
+</p>
+
+<p>
+Lambda capability is a significant boon to productivity,
+especially when parallel or concurrent closures can be
+defined with lambdas as opposed to manually generated functors.
+If the capability to capture <tt>*this</tt> by value
+is not enabled then the productivity benefits of lambdas
+cannot be fully realized in the parallelism and concurrency domain.
+</p>
+
+
+<BR><BR><HR>
+
+<h3>Proposed Wording Changes (Approach #1)</h3>
+
+<p><strong>Note: </strong>I use "<tt>* this</tt>" (with quotation
+marks and an
+intervening space) when referring to the form of the capture and 
+<tt>*this</tt> when referring to an implied expression.
+</p>
+
+
+<input type="checkbox" id="hidedel">Hide deleted text</input>
+
+<p>In 5.1.2/1, extend the production for <i>simple-capture</i> as follows:</p>
+<blockquote class="std">
+  <blockquote class="grammar">
+    &hellip;<br/>
+    <i>simple-capture:</i><br/>
+    <tab><i>identifier</i><br/>
+    <tab><tt>&</tt> <i>identifier</i><br/>
+    <tab><tt>this</tt><br/>
+    <tab><ins><tt>* this</tt></ins><br/>
+    &hellip;<br/>
+  </blockquote>
+</blockquote>
+
+<p>Modify 5.1.2/8 as follows:</p>
+<blockquote class="std">
+  &hellip;<br/>
+  If a <i>lambda-capture</i> includes a <i>capture-default</i> that is
+  <tt>=</tt>, each <i>simple-capture</i> of that <i>lambda-capture</i> shall be
+  of the form "<tt>&</tt> <i>identifier</i>"<ins> or "<tt>* this</tt>"</ins>.
+  <br/>
+  &hellip;<br/>
+  [ <i>Example:</i>
+  <blockquote><tt>
+  <tab>struct S2 { void f(int i); };<br/>
+  <tab>void S2::f(int i) {<br/>
+  <tab><tab>  [&, i]{ };
+    <tab>&emsp;&emsp;// </tt><i>OK</i><tt><br/>
+  <tab><tab>  [&, &i]{ };
+    <tab>&emsp;// </tt><i>error: </i><tt>i</tt><i> preceded by
+    </i><tt>&</tt><i> when </i><tt>&</tt><i> is the default</i><tt><br/>
+  <tab><tab>  <ins>[=, *this]{ };
+    &emsp;&emsp;&emsp;&emsp; // </tt><i>OK</i><tt></ins><br/>
+  <tab><tab>  [=, this]{ };
+    <tab>// </tt><i>error: </i><tt>this</tt><i> when </i><tt>=</tt><i>
+    is the default</i><tt><br/>
+  <tab><tab>  [i, i]{ };
+    <tab>&emsp;&emsp;// </tt><i>error:</i><tt> i </tt><i>repeated</i><tt><br/>
+  <tab><tab>  <ins>[this, *this]{ };
+    &emsp;&emsp;// </tt><i>error:</i><tt> this </tt><i>appears twice</i></ins><br/>
+  <tab>}
+  </tt></blockquote>
+    &mdash;<i>end example</i> ]
+</blockquote>
+
+<p>Modify 5.1.2/10 as follows:</p>
+<blockquote class="std">
+  &hellip;<br/>
+  An entity that is designated by a <i>simple-capture</i> is said to be
+  <i>explicitly captured</i>, and shall be <tt><ins>*</ins>this</tt>
+  <ins>(when the
+  <i>simple-capture</i> is "<tt>this</tt>" or "<tt>* this</tt>")</ins>
+  or a variable with automatic storage duration
+  declared in the reaching scope of the local lambda expression.
+  &hellip;<br/>
+</blockquote>
+
+
+<p>Modify 5.1.2/12 as follows:</p>
+<blockquote class="std">
+  A <i>lambda-expression</i> with an associated <i>capture-default</i>
+  that does not explicitly capture <tt><ins>*</ins>this</tt> or a
+  variable with automatic storage duration (this excludes any
+  <i>id-expression</i> that has been found to refer to an
+  <i>init-capture</i>'s associated non-static data member), is said to
+  <i>implicitly capture</i> the entity (i.e., <tt><ins>*</ins>this</tt>
+  or a variable) if the compound-statement:
+  &hellip;<br/>
+</blockquote>
+
+
+<p>Add to the example of 5.1.2/13:</p>
+<blockquote class="stdins">
+  <blockquote><tt>
+  <tab>struct s2 {<br/>
+  <tab><tab>double ohseven = .007;<br/>
+  <tab><tab>auto f() {<br/>
+  <tab><tab><tab>return [this]{<br/>
+  <tab><tab><tab><tab>return [*this]{<br/>
+  <tab><tab><tab><tab><tab> return ohseven;&emsp;// </tt><i>OK</i><tt><br/>
+  <tab><tab><tab><tab>}<br/>
+  <tab><tab><tab>}();<br/>
+  <tab><tab>}<br/>
+  <tab><tab>auto g() {<br/>
+  <tab><tab><tab>return []{<br/>
+  <tab><tab><tab><tab>return [*this]{};&emsp;//
+     </tt><i>error: </i><tt>*this</tt>
+     <i> not captured by outer lambda-expression</i><tt><br/>
+  <tab><tab><tab>}();<br/>
+  <tab><tab>}<br/>
+  <tab>};<br/>
+  </tt></blockquote>
+</blockquote>
+
+
+<p>Modify 5.1.2/15 as follows:</p>
+<blockquote class="std">
+  An entity is <i>captured by copy</i> if <ins>(a)</ins> it is implicitly
+  captured<ins>,</ins> <del>and</del> the <i>capture-default</i> is
+  <tt>=</tt><ins>, and the captured entity is not <tt>*this</tt>, </ins>
+  or <ins>(b)</ins> if it is explicitly captured with a capture that is
+  not of the form <ins><tt>this</tt>, </ins><tt>&</tt> <i>identifier</i>
+  or <tt>&</tt> <i>identifier</i> <i>initializer</i>.
+  <br/>
+  &hellip;<br/>
+</blockquote>
+
+
+<p>Move 5.1.2/18 to immediately follow 5.1.2/15 and modify it as follows:</p>
+<blockquote class="std">
+  &hellip;<br/>
+  If <tt><ins>*</ins>this</tt> is captured <ins>by copy</ins>, each
+  odr-use of <tt>this</tt> is transformed into <del>an access</del>
+  <ins>a pointer</ins> to the corresponding unnamed data member of
+  the closure type, cast (5.4) to the type of <tt>this</tt>.
+  <br/>
+  &hellip;<br/>
+</blockquote>
+
+
+<br>
+
+
+</body>
+</html>
+
+
