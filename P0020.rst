@@ -1,10 +1,10 @@
 ===================================================================
-P0020r1 : Floating Point Atomic
+D0020r2 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0020r1
-:Date: 2016-02-04
+:Number: D0020r2
+:Date: 2016-03-04
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -46,49 +46,34 @@ This capability is critical for high performance computing (HPC) applications.
   |    *FP* operator-=( *FP* operand ) const noexcept;
   |  };
 
-[Note: The additive operator overloads are consistent with the corresponding overloads 
-specified on *std::atomic<integral>* [29.5, Atomic types].
-However, these arithmatic operator overloads are
-inconsistent with the corresponding operators for corresponding
-arithmatic type.
+  Remark: In the event of arithmetic overflow or other floating point exception
+  in the associated arithmetic operation the behavior of associated
+  atomic operation is implementation defined.
+  [Note: The intent is that if an arithmetic overflow or other
+  floating point exception occurs during the atomic opeation
+  the behavior is analogous to the corresponding non-atomic
+  floating point operation. - end note]
+  It is a quality-of-implementation as to whether
+  arithmetic overflow or other floating point exception
+  is detectable in the resulting value; *e.g.*, a value of NaN.
 
-.. code-block:: c++
-
-  double d(0)
-  ( d += 1.0 ) += 2.0 ; // d+= returns an lvalue
-
-  atomic_view<double> ad(d);
-  ( ad += 1.0 ) += 2.0 ; // error: ad+= returns an rvalue
-
-..
-
-  \- end note]
-
-| *FP* **fetch_add(** *FP* **operand , memory_order order = memory_order_seq_cst )**
-| *FP* **fetch_sub(** *FP* **operand , memory_order order = memory_order_seq_cst )**
-
-  Requires: The memory order shall not be memory_order_acquire, memory_order_acq_rel, or memory_order_consume.
+  | *FP* **fetch_add(** *FP* **operand , memory_order order = memory_order_seq_cst )**
+  | *FP* **fetch_sub(** *FP* **operand , memory_order order = memory_order_seq_cst )**
 
   Effects: Atomically replaces the value of the floating point object
-  referenced by the atomic view with the sum of the previous value and
-  operand for *add* or -operand for *sub*.
+  referenced by the *atomic-view-concept* with the sum of the previous value
+  and operand for *add* or -operand for *sub*.
   Memory is affected according to the value of **order**.
   This is an atomic read-modify-write operation (1.10).
 
   Returns: fetch\_\ *op*  Atomically, the value of the referenced object immediately before the effects.
 
-  Remark: In the event of arithmetic overflow or other floating point exception,
-  the behavior of this operation is implementation defined.
-  It is a quality-of-implementation as to whether
-  arithmetic overflow or other floating point exception
-  is detectable in the resulting value; *e.g.*, a value of NaN.
 
-** *FP* operator+=(** *FP* **operand )**
+ | *FP* **operator+=(** *FP* **operand )**
+ | *FP* **operator-=(** *FP* **operand )**
 
-  Effects: Returns **fetch_add(operand) + operand** .
+  Effects: As if **fech_add(operand)** or **fetch_sub(operand)**
 
-** *FP* operator-=(** *FP* **operand )**
-
-  Effects: Returns **fetch_sub(operand) - operand** .
+  Returns: As if **fetch_add(operand) + operand** or **fetch_sub(operand) - operand**
 
 

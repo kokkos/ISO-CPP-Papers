@@ -1,10 +1,10 @@
 ===================================================================
-D0019r2 : Atomic View
+D0019r3 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0019r2
-:Date: 2016-03-01
+:Number: D0019r3
+:Date: 2016-03-04
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -42,8 +42,8 @@ The proposal is in five parts:
 Note: Feedback from SG1 Library Evolution Working Group (LEWG) on P0009r0,
 Polymorphic Multidimensional Array View, noted that the term *view* 
 has the connotation of read-only. In response the P0009r0 *array_view*
-name has been revised to *array_ref* in P0009r1.
-The proposed names *atomic_view* and *atomic_array_view* may have
+name has been revised to **array_ref** in P0009r1.
+The proposed names **atomic_view** and **atomic_array_view** may have
 the same feedback from LEWG, potentially resulting in a similar
 naming revision.
 
@@ -64,7 +64,8 @@ of a template class of this name.
 
   |  template< class T >
   |  struct *atomic-view-concept* {
-  |    // The following member interface specifications match the corresponding member specifications of atomic<T> and P0152R0
+  |    // The following member interface specifications corresponding to member specifications of atomic<T> and P0152R0.
+  |    // Member functions are non-volatile and const as modifications are applied to the referenced non-atomic object.
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
   |    bool is_lock_free() const noexcept;
   |    void store( T , memory_order = memory_order_seq_cst ) const noexcept;
@@ -79,7 +80,7 @@ of a template class of this name.
   |
   |    // The following member operator does not appear in atomic<T>
   |    // it is similar to the std::unique_ptr operator.
-  |    explicit operator bool () const noexcept;
+  |    explicit constexpr operator bool () const noexcept;
   |  };
 
   Requires: Type *T* is trivially copyable.
@@ -91,9 +92,9 @@ may acquire shared resources such as concurrent locks to
 support atomic operations on the non-atomic object.
 
 
-**constexpr bool operator() const noexept ;**
+**explicit constexpr operator bool () const noexept ;**
 
-  Returns if the *atomic-view-concept* object wraps a non-null pointer.
+  Returns: true if the *atomic-view-concept* object wraps a non-null pointer.
   A default constructed *atomic-view-concept* object returns false.
 
 
@@ -124,21 +125,6 @@ in contrast to the non-const and volatile operations of a **std::atomic<integral
   |  };
 
 
-Note that for consistency the *atomic-view-concept*\ **<**\ *integral*\ **>**
-mathematical operator overloads retain the same mathematical inconsistency
-with respect to the mathematical operators for the *integral* type,
-as illustrated below.
-
-.. code-block:: c++
-
-  int i(0)
-  ++( ++i );        // ++i returns an lvalue
-  ( i += 1 ) += 2 ; // i+= returns an lvalue
-
-  std::atomic<int> ai(0);
-  ++( ++( ai ) );    // error: ++ai returns an rvalue
-  ( ai += 1 ) += 2 ; // error: ai+= returns an rvalue
-
 ..
 
 
@@ -166,7 +152,7 @@ would incur an unnecessary performance penalty.  - end note]
 
   |  template< class T > struct atomic_view { // conforms to atomic view concept
   |
-  |    explicit atomic_view( T & ); // wrapping constructor is NOT noexcept
+  |    explicit atomic_view( T & obj ); // wrapping constructor is NOT noexcept
   |
   |    constexpr atomic_view() noexcept ;
   |    atomic_view( atomic_view && ) noexcept ;
@@ -176,14 +162,7 @@ would incur an unnecessary performance penalty.  - end note]
   |    ~atomic_view();
   |  };
 
-  Requires: Type *T* is trivially copyable and object of type *T*
-  can have alignment suitable for *atomic-view-concept* operations.
-  [Note: For example, if type *T* is **char** then it may be infeasible to
-  correctly implement *atomic-view-concept* operations when non-atomic
-  operations could be applied to a **char** object adjacent in memory.
-  A **static_assert** diagnostic should be generated
-  if **atomic_view** cannot be supported for an object of type *T*.
-  - end note]
+  Requires: Type *T* is trivially copyable.
 
 [Note: The intent is for *atomic-view-concept* operations
 to directly update the referenced object.
@@ -204,58 +183,32 @@ acquired resource as opposed to re-acquiring that resource.
 
 **atomic_view<T>::atomic_view( T & obj );**
 
-  Requires: The referenced non-atomic object **obj** shall satisfy 
-  alignment requirements for its type T (3.11).
-
-  Requires: The lifetime (3.8) of an **atomic_view<T>** instance
+  Requires: The referenced non-atomic object **obj** shall have 
+  alignment suitable for *atomic-view-concept* operations.
+  The lifetime (3.8) of an **atomic_view<T>** instance
   shall not exceed the lifetime of the referenced non-atomic object.
-
-  Requires: Multiple instances of an *atomic_view* may be constructed with the
-  wrapping constructor and reference the same object.
-  While any *atomic_view* instance exists for a referenced object
-  all accesses of that object shall occur through an *atomic_view* referencing
-  that object.
-
-  Requires: If the **atomic_view** wrapped object is of a
+  Multiple instances of an *atomic_view* may be constructed
+  referencing the same object.
+  All accesses of an **atomic_view** referenced object shall 
+  occur thru an **atomic_view** as long an **atomic_view** exists
+  that references that object.
+  If the **atomic_view** wrapped object is of a
   class or aggregate type then members of that object
   shall not be wrapped by an **atomic_view** object.
+  If he **atomic_view** wrapped object is a member of an array
+  that array shall not be wrapped by an **atomic_array_view**.
 
-  Requires: If an array is wrapped by an **atomic_array_view**
-  then members of that array may not be concurrently wrapped by 
-  an **atomic_view**, unless both the **atomic_array_view**
-  and **atomic_view** types are **is_always_lock_free**.
-
-  Effects: This wrapping constructor references the non-atomic object.
+  Effects: References the non-atomic object.
   Atomic operations on this instance are atomic with respect
   to atomic operations on any **atomic_view** instance that
   references the same object.
-  [Note: This constructor is allowed to throw an exception
-  if *atomic-view-concept* operations cannot be supported
-  for the the referenced object.
-  For example, if the referenced object not properly aligned
+
+  Throws: If *atomic-view-concept* operations cannot be supported
+  for the referenced object.
+  [Note: For example, if the referenced object is not properly aligned
   or has automatic storage duration within an accelerator
   coprocessor (*e.g.*, a GPGPU) execution context. - end note]
-  [Note: This constructor may obtain a resource as necessary to
-  support atomic operations, for example a lock associated with
-  the referenced object's address.
-  This constructor is allowed to throw an exception
-  if such a resource could not be obtained. – end note]
-
-  Effects: All accesses of the wrapped object in the same execution context
-  that appear before the wrapping constructor shall happen before
-  the wrapping constructor completes.
-  [Note: As if a memory fence were performed on the
-  wrapped object within the wrapping constructor. - end note]
-
-.. code-block:: c++
-
-  void foo( int & i ) {
-    i = 42 ;
-    atomic_view<int> ai(i);
-    std::async( [=]() { assert( ai.load() == 42 ); });
-  }
-
-..
+  If resource acquisition, such as a lock, is required and fails.
 
 | **atomic_view<T>::atomic_view( atomic_view && rhs ) noexcept ;**
 | **atomic_view<T>::atomic_view( const atomic_view & rhs ) noexcept ;**
@@ -265,12 +218,8 @@ acquired resource as opposed to re-acquiring that resource.
   Effects: If *rhs* references an object
   then this instance references the same object otherwise
   this instance does not reference an object.
-  [Note: If *rhs* holds a resource to support atomic operations
-  then that resource should be copied or moved as appropriate. - end note]
 
 **atomic_view<T>::~atomic_view() noexcept ;**
-
-  Effects: This instance does not reference an object.
 
 -------------------------------------------
 Atomic View for a Very Large Array
@@ -289,10 +238,33 @@ Parallel algorithms with read-only access require best-performing
 streaming read access, random read access, vectorization,
 or other guaranteed non-conflicting HPC pattern.
 
-An **atomic_array_view** object is used to perform
+An *atomic_array_view* object is used to perform
 atomic operations on the viewed non-atomic members of the array.
-The intent is for **atomic_array_view** to provide the
-best-performing implementation of atomic-view-concept operations for the members of the array.  
+The intent is for *atomic_array_view* to provide the
+best-performing implementation of atomic-view-concept operations
+for the members of the array.  
+
+Recall that any number of *atomic_view* entities may independently
+*wrap construct* the same underlying object and all
+*atomic-view-concept* operations performed thru any of those
+**atomic_view** entities are atomic for the referenced object.
+In contrast, only one **atomic_array_view** entity may **wrap construct**
+an array and thus *atomic-view-concept* operations must be
+performed thru that entity or **atomic_array_view** entities
+transitively copy constructed, move constructed, copy assigned, or
+move assigned from that originating *wrap constructed* **atomic_array_view**
+entity.
+This allows a non-lock-free *atomic_array_view* to acquire resources,
+such as a set of locks, that are exclusively associated with the wrapped array.
+When such a resource is necessary subsequent copy and move constructors
+and assignment operators may reduce overhead by copying or moving the
+previously acquired resource as opposed to re-acquiring that resource.
+The intent is to enable reduction of the time and space overhead
+associated with of managing such non-lock-free resources.
+
+Note that an **atomic_array_view** is similar to **string_view**
+(N4480 Section 7) in that it wraps or references a contiguous set of objects;
+however, the reference is non-constant.
 
 
   |  template< class T > struct atomic_array_view {
@@ -301,7 +273,7 @@ best-performing implementation of atomic-view-concept operations for the members
   |    bool is_lock_free() const noexcept ;
   |
   |    // Returns true if the view wraps an array and member access is valid.
-  |    explicit bool operator() const noexcept ;
+  |    explicit constexpr operator bool() const noexcept ;
   |
   |    atomic_array_view( T * , size_t ); // Wrapping constructor is NOT noexcept
   |    constexpr atomic_array_view() noexcept ;
@@ -320,30 +292,15 @@ best-performing implementation of atomic-view-concept operations for the members
 
   Requires: Type *T* is trivially copyable.
 
-[Note: Implementation of an **atomic_array_view** may be
-feasible for a contiguously allocated set of objects of type *T*,
-such as **char**, even when not feasible
-for an **atomic_view** implementation for *T*.
-- end note]
-
-[Note: The *wrapping constructor* may acquire resources,
-such as a set of locks, to perform atomic operations.
-When such a resource is necessary subsequent
-copy and move constructors and assignment operators
-may reduce overhead by copying or moving the previously
-acquired resource as opposed to re-acquiring that resource.
-The intent is to enable amortization of the time and space overhead
-of obtaining and releasing such resources. – end note] 
-
-
 **using reference =** *implementation-defined-atomic-view-concept-type* **;**
 
-  The **reference** type conforms to *atomic-view-concept* for type T.
+  Requires: The **reference** type conforms to *atomic-view-concept* for type T.
+  [Note: The **reference** type is *not* required to be *atomic_view<T>*. - end note]
 
 | **static constexpr bool is_always_lock_free =** *implementation defined* **;**
 | **bool atomic_array_view<T>::is_lock_free() const noexcept ;**
 
-  Effects: Whether atomic operations on members are (always) lock free.
+  Returns: Whether atomic operations on members are (always) lock free.
 
 **constexpr atomic_array_view<T>::atomic_array_view() noexcept;**
 
@@ -352,65 +309,31 @@ of obtaining and releasing such resources. – end note]
 
 **atomic_array_view<T>::atomic_array_view( T * ptr , size_t N );**
 
-  Requires: If 0 < N the array referenced by [ptr .. ptr+N-1] shall
-  satisfy alignment requirements for its type T (3.11) and
-  shall be within a contiguously allocated set of objects (8.3.4p1).
-  The contiguously allocated set of objects shall have alignment
-  suitable for *atomic-view-concept* operations.
-  [Note: For example, if type *T* is **char** then the contiguously
-  allocated set of **char** objects must be aligned such that
-  non-atomic operations on object immediately preceding or following
-  the set in memory will not interfere with *atomic-view-concept*
-  operations on the wrapped array.
-  - end note]
-
-  Requires: While any *atomic_array_view* instance exists for a
-  referenced array all accesses of that array and its members
-  shall occur through an *atomic_array_view* referencing
-  that array.
-  Multiple concurrent instances of an *atomic_array_view*
-  or *atomic_view* may be constructed with the wrapping constructors
-  which references any of the any members (i.e., has an overlapping range)
-  if-and-only-if the *atomic_array_view* and *atomic_view* types are
-  **is_lock_free**.
-  If NOT **is_lock_free** then construction of
-  multiple concurrent instances
-  via the wrapping constructors has undefined behavior.
-  [Note: This allows a non-lock-free *atomic_array_view* to
-  acquire a set of locks that are exclusively associated
-  with the wrapped array. - end note]
+  Requires: If 0 < N the array referenced by [ptr .. ptr+N) shall
+  be within a contiguously allocated set of objects (8.3.4p1) and
+  suitably aligned for *atomic-view-concept* operations on its members.
+  This *wrapping constructor* shall not be applied to any
+  subset of the array, including the entire array, as long
+  as an **atomic_array_view** exists for that array.
+  An **atomic_view** shall not exist for any member
+  of the array as long as an **atomic_array_view** exists for that array.
+  All accesses of the array's members shall occur through an
+  **atomic_array_view<T>::reference** as long as an **atomic_array_view**
+  exists for that array.
 
   Effects: If 0 < N the *wrapping constructor* wraps the referenced
-  contiguously allocated array [ptr .. ptr+N-1];
+  contiguously allocated array [ptr .. ptr+N);
   otherwise the **atomic_array_view** does not reference an array.
   Atomic operations on members of this instance are atomic with
   respect to atomic operations on members any **atomic_array_view**
   instance that references the same array.
-  [Note: This constructor is allowed to throw an exception
-  if the referenced array is not properly aligned. - end note]
-  [Note: This constructor may obtain resources as necessary to
-  support atomic operations on members.
-  This constructor is allowed to throw an exception
-  if such resources could not be obtained. – end note]
 
-  Effects: All accesses of the wrapped array members
-  in the same execution context that appear before the 
-  wrapping constructor shall happen before the wrapping constructor completes.
-  [Note: As if a memory fence were performed on the wrapped array
-  within the wrapping constructor. - end note]
-
-.. code-block:: c++
-
-  void foo( int * i , size_t N ) {
-    i[0] = 42 ;
-    i[N-1] = 42 ;
-    atomic_array_view<int> ai(i,N);
-    std::async( [=]()
-      {
-        assert( ai[0].load() == 42 );
-        assert( ai[N-1].load() == 42 );
-      });
-  }
+  Throws: If *atomic-view-concept* operations cannot be supported
+  for members of the referenced array.
+  [Note: For example, if the referenced array is not properly aligned
+  or has automatic storage duration within an accelerator
+  coprocessor (*e.g.*, a GPGPU) execution context. - end note]
+  If resource acquisition, such as a set of locks, is required and fails.
 
 ..
 
@@ -420,39 +343,26 @@ of obtaining and releasing such resources. – end note]
 | **atomic_array_view<T> & atomic_array_view<T>::operator = ( atomic_array_view && rhs ) noexcept ;**
 | **atomic_array_view<T> & atomic_array_view<T>::operator = ( const atomic_array_view & rhs ) noexcept ;**
 
-  Effects: If *rhs* references an array
-  then this instance references the same array otherwise
-  this instance does not reference a array.
-  [Note: If *rhs* holds resources to support atomic operations
-  then that resource should be copied or moved as appropriate.
-  It may be appropriate for these resources to be managed
-  with *std::shared_ptr* semantics. - end note]
-
 **atomic_array_view<T>::~atomic_array_view() noexcept ;**
-
-  Effects: This instance does not reference an array.
-  [Note: If this instances holds resources to support atomic operations
-  then those resources should be released or destroyed as appropriate. - end note]
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 
-  Requires: i < size().
+  Requires: **i < size()** and the lifetime of the returned **reference**
+  object, copied **reference** object, or moved **reference** object
+  shall not exceed the lifetime of the associated **atomic_array_view**.
+  [Note: Analogous to the lifetime of an iterator with respect to the
+  lifetime of the associated container. - end note]
 
-  Requires: The returned **reference** object shall be destroyed or
-  re-assigned before the last associated *atomic_array_view* instance
-  is destroyed.
-
-  Returns: An instance of **reference** type for the i-th member of the **atomic_array_view**, where indexing is zero-based.
-  [Note: The intent is for efficient generation of the returned object with respect to obtaining a resource,
-  such as a shared locking mechanism, that may be required to support atomic operations on the referenced member. – end note] 
- 
+  Returns: An instance of **reference** type that references
+  the i-th member of the referenced array, where indexing is zero-based.
+  [Note: The intent is for efficient generation of the returned 
+  *atomic-view-concept* object with respect to resources required
+  to support non-lock-free *atomic-view-concept* operations.
+  – end note] 
 
 ------------------------------------------------------------
 Notes and Examples
 ------------------------------------------------------------
-
-Atomic Array View
---------------------
 
 Under the HPC use case the member access operator,
 proxy type constructor, or proxy type destructor
@@ -513,76 +423,5 @@ confusion with construction from non-contiguous iterators.
 Wrapping constructors for standard contiguous containers would also be valid.
 However, such constructors could have potential confusion as to whether
 he atomic_array_view would or would not track resizing operations applied to the input container.
-
-Implementation note for **atomic_array_view<T>**
-
-  All non-atomic accesses of array members that appear before the wrapping constructor shall happen before subsequent atomic operations on the atomic_array_view members.  For example:
-
-.. code-block:: c++
-
-  void foo( int * i , size_t N ) {
-    i[0] = 42 ;
-    i[N-1] = 42 ;
-    atomic_array_view<int> ai(i,N);
-    // Operations on ‘i’ shall happen before operations on ‘ai’
-    foreach( parallel_policy, 0, M, [=]( int j ){ ++ai[j%N] ; } );
-  }
-
-..
-
-
-Mathematically Consistent Integral Operator Overloads
-----------------------------------------------------------------------
-
-As previously noted the **std::atomic<**\ *integral*\ **>**
-mathematical operator overloads are inconsistent with the mathematical
-operators for *integral*.
-The *atomic-view-concept*\ **<**\ *integral*\ **>** retains these inconsistent
-operator overloads.
-Consistent mathematical operator semantics would be restored with the following
-operator specifications.
-However, such a change would break backward compatibility and is therefore
-only noted and not a proposed change.
-
-|  template<> struct atomic < *integral* > {
-|
-|    volatile atomic & operator++(int) volatile noexcept ;
-|    atomic & operator++(int) noexcept ;
-|    volatile atomic & operator--(int) volatile noexcept ;
-|    atomic & operator--(int) noexcept ;
-|
-|    // fetch-and-increment, fetch-and-decrement operators:
-|    *integral* operator++() volatile noexcept ;
-|    *integral* operator++() noexcept ;
-|    *integral* operator--() volatile noexcept ;
-|    *integral* operator--() noexcept ;
-|
-|    volatile atomic & operator+=( *integral* ) volatile noexcept;
-|    atomic & operator+=( *integral* ) noexcept;
-|    volatile atomic & operator-=( *integral* ) volatile noexcept;
-|    atomic & operator-=( *integral* ) noexcept;
-|    volatile atomic & operator&=( *integral* ) volatile noexcept;
-|    atomic & operator&=( *integral* ) noexcept;
-|    volatile atomic & operator|=( *integral* ) volatile noexcept;
-|    atomic & operator|=( *integral* ) noexcept;
-|    volatile atomic & operator^=( *integral* ) volatile noexcept;
-|    atomic & operator^=( *integral* ) noexcept;
-|  };
-|
-|  template<> struct *atomic-view-concept* < *integral* > {
-|
-|    const *atomic-view-concept* & operator++(int) const noexcept;
-|    const *atomic-view-concept* & operator--(int) const noexcept;
-|
-|    *integral* operator++() const noexcept;
-|    *integral* operator--() const noexcept;
-|
-|    const *atomic-view-concept* & operator+=( *integral* ) const noexcept;
-|    const *atomic-view-concept* & operator-=( *integral* ) const noexcept;
-|    const *atomic-view-concept* & operator&=( *integral* ) const noexcept;
-|    const *atomic-view-concept* & operator|=( *integral* ) const noexcept;
-|    const *atomic-view-concept* & operator^=( *integral* ) const noexcept;
-|  };
-
 
 
