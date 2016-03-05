@@ -47,26 +47,30 @@ The proposed names **atomic_view** and **atomic_array_view** may have
 the same feedback from LEWG, potentially resulting in a similar
 naming revision.
 
+
 -------------------------------------------
 Atomic View Concept
 -------------------------------------------
 
 A class conforming to the atomic view concept
 provides atomic operations for a referenced non-atomic object.
-These operations replicate the operations on **std::atomic<T>** [29.5, Atomic types];
+These operations replicate the operations on
+**std::atomic<T>** [29.5 Atomic Types and 29.6 Operations on atomic types];
 however, operations are const with respect to the atomic view object
-in contrast to the non-const and volatile operations of a **std::atomic<T>** object.
-An atomic view does not own (neither exclusively nor shared) the referenced non-atomic object.
+in contrast to the non-const and volatile operations of a
+**std::atomic<T>** object because an atomic view does not own
+(neither exclusively nor shared) the referenced non-atomic object.
 
-The following *atomic-view-concept* specification is included to define requirements
-for classes conforming to the *atomic-view-concept* and does not imply the existiance
+The following *atomic-view-concept* specification is
+included to define requirements for types conforming
+to the *atomic-view-concept* and does not imply the existance
 of a template class of this name.
+This specification is to appear in 29.5 Atomic Types.
 
   |  template< class T >
   |  struct *atomic-view-concept* {
-  |    // The following member interface specifications corresponding to member specifications of atomic<T> and P0152R0.
-  |    // Member functions are non-volatile and const as modifications are applied to the referenced non-atomic object.
-  |    static constexpr bool is_always_lock_free = *implementation defined* ;
+  |    // The following members satisfy the specifications in 29.6 Operations on atomic types,
+  |    // with the difference that member functions are non-volatile and const.
   |    bool is_lock_free() const noexcept;
   |    void store( T , memory_order = memory_order_seq_cst ) const noexcept;
   |    T load( memory_order = memory_order_seq_cst ) const noexcept;
@@ -78,34 +82,20 @@ of a template class of this name.
   |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
   |    T operator=(T) const noexcept ;
   |
+  |    // The following member corresponds to specification of P0152R0.
+  |    static constexpr bool is_always_lock_free = *implementation defined* ;
+  |
+  |    // Alignment requirement for objects of type *T*
+  |    static constexpr size_t minimum_required_alignment = *implementation defined* ;
+  |
   |    // The following member operator does not appear in atomic<T>
   |    // it is similar to the std::unique_ptr operator.
   |    explicit constexpr operator bool () const noexcept;
   |  };
-
-  Requires: Type *T* is trivially copyable.
-
-Lock-free *atomic-view-concept* conform to the address-free property as in 29.4p3.
-
-Constructors and assignment operators of non-lock-free *atomic-view-concept*
-may acquire shared resources such as concurrent locks to
-support atomic operations on the non-atomic object.
-
-
-**explicit constexpr operator bool () const noexept ;**
-
-  Returns: true if the *atomic-view-concept* object wraps a non-null pointer.
-  A default constructed *atomic-view-concept* object returns false.
-
-
-A class conforming to the atomic view concept shall provide the
-following operations when T is an integral type.
-These operations replicate the operations on *std::atomic<integral>* [29.5, Atomic types];
-however, operations are const with respect to the atomic view object
-in contrast to the non-const and volatile operations of a **std::atomic<integral>** object.  
-
-
+  |
   |  template<> struct *atomic-view-concept* < *integral* > {
+  |    // The following members satisfy the specifications in 29.6 Operations on atomic types,
+  |    // with the difference that member functions are non-volatile and const.
   |
   |    *integral* fetch_add( *integral* , memory_order = memory_order_seq_cst) const noexcept;
   |    *integral* fetch_sub( *integral* , memory_order = memory_order_seq_cst) const noexcept;
@@ -124,8 +114,26 @@ in contrast to the non-const and volatile operations of a **std::atomic<integral
   |    *integral* operator^=( *integral* ) const noexcept;
   |  };
 
+  Requires: Type *T* is trivially copyable.
 
-..
+Lock-free *atomic-view-concept* conform to the address-free property as in 29.4p3.
+
+Constructors and assignment operators of non-lock-free *atomic-view-concept*
+may acquire shared resources such as concurrent locks to
+support atomic operations on the non-atomic object.
+
+**static constexpr size_t minimum_required_alignment**
+
+  Requires: An object referenced by an *atomic-view-concept* shall
+  be aligned to **minimum_required_alignment**.
+  [Note: For example, an architecture may be able to support lock-free
+  *atomic-view-concept* operations on **std::complex<double>** only
+  if aligned to 16 bytes. - end note]
+
+**explicit constexpr operator bool () const noexept ;**
+
+  Returns: true if the *atomic-view-concept* object wraps a non-null pointer.
+  A default constructed *atomic-view-concept* object returns false.
 
 
 -------------------------------------------
@@ -140,15 +148,15 @@ All atomic operations on an instance of **atomic_view<T>**
 are atomic with respect to any other instance that views the same
 object, as defined by equality of pointers to that object. 
 
-
-[Note: Introducing concurrency within legacy codes may require
+Introducing concurrency within legacy codes may require
 replacing operations on existing non-atomic objects with atomic operations
 such that the non-atomic object cannot be replaced with a *std::atomic* object.
-- end note]
 
-[Note: An object may be heavily used non-atomically in well-defined phases
+An object may be heavily used non-atomically in well-defined phases
 of an application.  Forcing such objects to be exclusively *std::atomic*
-would incur an unnecessary performance penalty.  - end note]
+would incur an unnecessary performance penalty.
+
+This specification is to appear in a new section 29.# Atomic Views.
 
   |  template< class T > struct atomic_view { // conforms to atomic view concept
   |
@@ -179,12 +187,12 @@ acquired resource as opposed to re-acquiring that resource.
 **constexpr atomic_view<T>::atomic_view() noexcept;**
 
   Effects: This instance does not reference an object and
-  therefore **operator()() == false**.
+  therefore **operator bool() == false**.
 
 **atomic_view<T>::atomic_view( T & obj );**
 
-  Requires: The referenced non-atomic object **obj** shall have 
-  alignment suitable for *atomic-view-concept* operations.
+  Requires: The referenced non-atomic object **obj** shall be
+  aligned to **minimum_required_alignment**.
   The lifetime (3.8) of an **atomic_view<T>** instance
   shall not exceed the lifetime of the referenced non-atomic object.
   Multiple instances of an *atomic_view* may be constructed
@@ -202,6 +210,8 @@ acquired resource as opposed to re-acquiring that resource.
   Atomic operations on this instance are atomic with respect
   to atomic operations on any **atomic_view** instance that
   references the same object.
+  May acquire shared resources such as a lock associated with
+  the referenced object.
 
   Throws: If *atomic-view-concept* operations cannot be supported
   for the referenced object.
@@ -220,6 +230,8 @@ acquired resource as opposed to re-acquiring that resource.
   this instance does not reference an object.
 
 **atomic_view<T>::~atomic_view() noexcept ;**
+
+  Effects: Releases shared resources that may have been acquired.
 
 -------------------------------------------
 Atomic View for a Very Large Array
@@ -266,8 +278,13 @@ Note that an **atomic_array_view** is similar to **string_view**
 (N4480 Section 7) in that it wraps or references a contiguous set of objects;
 however, the reference is non-constant.
 
+This specification is to appear in a new section 29.# Atomic Views.
+
 
   |  template< class T > struct atomic_array_view {
+  |
+  |    // Alignment requirement for objects of type *T*
+  |    static constexprt size_t alignment = *implementation defined* ;
   |
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
   |    bool is_lock_free() const noexcept ;
@@ -311,12 +328,12 @@ however, the reference is non-constant.
 
   Requires: If 0 < N the array referenced by [ptr .. ptr+N) shall
   be within a contiguously allocated set of objects (8.3.4p1) and
-  suitably aligned for *atomic-view-concept* operations on its members.
+  shall be aligned to **minimum_required_alignment**.
   This *wrapping constructor* shall not be applied to any
   subset of the array, including the entire array, as long
-  as an **atomic_array_view** exists for that array.
+  as an **atomic_array_view** entity exists wrapping that array.
   An **atomic_view** shall not exist for any member
-  of the array as long as an **atomic_array_view** exists for that array.
+  of the array as long as an **atomic_array_view** entity exists for that array.
   All accesses of the array's members shall occur through an
   **atomic_array_view<T>::reference** as long as an **atomic_array_view**
   exists for that array.
@@ -327,6 +344,7 @@ however, the reference is non-constant.
   Atomic operations on members of this instance are atomic with
   respect to atomic operations on members any **atomic_array_view**
   instance that references the same array.
+  May acquire shared resources such as a set of locks.
 
   Throws: If *atomic-view-concept* operations cannot be supported
   for members of the referenced array.
@@ -335,8 +353,6 @@ however, the reference is non-constant.
   coprocessor (*e.g.*, a GPGPU) execution context. - end note]
   If resource acquisition, such as a set of locks, is required and fails.
 
-..
-
 
 | **atomic_array_view<T>::atomic_array_view( atomic_array_view && rhs ) noexcept ;**
 | **atomic_array_view<T>::atomic_array_view( const atomic_array_view & rhs ) noexcept ;**
@@ -344,6 +360,8 @@ however, the reference is non-constant.
 | **atomic_array_view<T> & atomic_array_view<T>::operator = ( const atomic_array_view & rhs ) noexcept ;**
 
 **atomic_array_view<T>::~atomic_array_view() noexcept ;**
+
+  Effects: Releases shared resource that may have been acquired.
 
 **atomic_array_view<T>::reference  atomic_array_view<T>::operator[]( size_t i ) const noexcept ;**
 

@@ -21,59 +21,50 @@ D0020r2 : Floating Point Atomic
 
 .. sectnum::
 
+Motivation
+----------------------------------------
+
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic addition on an object conforming to the *atomic-view-concept* (see P0019, Atomic View)
 instantiated for a floating point type.
 A class conforming to the *atomic-view-concept* shall also provide
-the following operations when T is a floating point (FP) type.
+the following operations when T is a floating-point type.
 This capability is critical for high performance computing (HPC) applications.
 
-  |  template<> struct atomic< *FP* > {
-  |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) noexcept;
-  |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) noexcept;
-  |    *FP* operator+=( *FP* operand ) volatile noexcept;
-  |    *FP* operator+=( *FP* operand ) noexcept;
-  |    *FP* operator-=( *FP* operand ) volatile noexcept;
-  |    *FP* operator-=( *FP* operand ) noexcept;
+Proposal
+----------------------------------------
+
+[Note: In 3.9.1p8 floating point types are also refered to as *floating* types. - end note]
+
+Add to 29.5, Atomic Types, before 29.5p1.
+
+  |  template<> struct atomic< *floating* > {
+  |    *floating* fetch_add( *floating* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
+  |    *floating* fetch_add( *floating* operand , memory_order order = memory_order_seq_cst ) noexcept;
+  |    *floating* fetch_sub( *floating* operand , memory_order order = memory_order_seq_cst ) volatile noexcept;
+  |    *floating* fetch_sub( *floating* operand , memory_order order = memory_order_seq_cst ) noexcept;
+  |    *floating* operator+=( *floating* operand ) volatile noexcept;
+  |    *floating* operator+=( *floating* operand ) noexcept;
+  |    *floating* operator-=( *floating* operand ) volatile noexcept;
+  |    *floating* operator-=( *floating* operand ) noexcept;
   |  };
   |
-  |  template<> struct *atomic-view-concept* < *FP* > {
-  |    *FP* fetch_add( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
-  |    *FP* fetch_sub( *FP* operand , memory_order order = memory_order_seq_cst ) const noexcept;
-  |    *FP* operator+=( *FP* operand ) const noexcept;
-  |    *FP* operator-=( *FP* operand ) const noexcept;
+  |  template<> struct *atomic-view-concept* < *floating* > {
+  |    *floating* fetch_add( *floating* operand , memory_order order = memory_order_seq_cst ) const noexcept;
+  |    *floating* fetch_sub( *floating* operand , memory_order order = memory_order_seq_cst ) const noexcept;
+  |    *floating* operator+=( *floating* operand ) const noexcept;
+  |    *floating* operator-=( *floating* operand ) const noexcept;
   |  };
 
-  Remark: In the event of arithmetic overflow or other floating point exception
-  in the associated arithmetic operation the behavior of associated
-  atomic operation is implementation defined.
-  [Note: The intent is that if an arithmetic overflow or other
-  floating point exception occurs during the atomic opeation
-  the behavior is analogous to the corresponding non-atomic
-  floating point operation. - end note]
-  It is a quality-of-implementation as to whether
-  arithmetic overflow or other floating point exception
-  is detectable in the resulting value; *e.g.*, a value of NaN.
+Insert into the listed types in 29.5p5:
 
-  | *FP* **fetch_add(** *FP* **operand , memory_order order = memory_order_seq_cst )**
-  | *FP* **fetch_sub(** *FP* **operand , memory_order order = memory_order_seq_cst )**
+  *floating* specializations
 
-  Effects: Atomically replaces the value of the floating point object
-  referenced by the *atomic-view-concept* with the sum of the previous value
-  and operand for *add* or -operand for *sub*.
-  Memory is affected according to the value of **order**.
-  This is an atomic read-modify-write operation (1.10).
+Insert new paragraph after 29.6.5p30.
 
-  Returns: fetch\_\ *op*  Atomically, the value of the referenced object immediately before the effects.
-
-
- | *FP* **operator+=(** *FP* **operand )**
- | *FP* **operator-=(** *FP* **operand )**
-
-  Effects: As if **fech_add(operand)** or **fetch_sub(operand)**
-
-  Returns: As if **fetch_add(operand) + operand** or **fetch_sub(operand) - operand**
-
+  Remark: For *floating* types arithmatic operations
+  *should* conform to **std::numeric_limits<** *floating* **>** (18.3.2)
+  traits associated with the floating point type.
+  The floating point environment (26.3) for these operations may be
+  different that the calling thread's floating point environment.
 
