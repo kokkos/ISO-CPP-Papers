@@ -1,10 +1,10 @@
 ===================================================================
-D0019r3 : Atomic View
+P0019r2 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0019r3
-:Date: 2016-03-04
+:Number: P0019r2
+:Date: 2016-03-14
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -14,7 +14,7 @@ D0019r3 : Atomic View
 :Contact: ogiroux@nvidia.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Audience: SG1 Concurrency
+:Audience: SG1 Concurrency, Library Evoluton
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
 
 .. sectnum::
