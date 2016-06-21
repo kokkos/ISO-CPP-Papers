@@ -48,7 +48,7 @@ Insert into N4594 29.2 Header <atomic> synopsis
   | // *29.5, generic types*
   | template<> struct atomic< *floating* >;
   |
-  | // *29.6.5, specialization for floating-point types.
+  | // *29.6.5, specialization for floating-point types.*
   |
   | *floating* atomic_fetch_add(volatile *atomic-floating* * , *floating*) noexcept ; 
   | *floating* atomic_fetch_add( *atomic-floating* * , *floating*) noexcept ; 
