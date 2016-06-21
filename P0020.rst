@@ -99,14 +99,14 @@ Insert N4594 29.6.3p3:
 
   In the declarations of these functions and function template specializations,
   the name *floating* refers to a *floating* type and the name *atomic-floating*
-  refers to atomic< *floating* >.
+  refers to **atomic<** *floating* **>**.
 
 
-Insert new paragraph after 29.6.5p31.
+Append to Remark paragraph 29.6.5p31.
 
-  Remark: For *floating* types atomic arithmatic operations
+  For *floating* types atomic arithmatic operations
   *should* conform to **std::numeric_limits<** *floating* **>** (18.3.2)
   traits associated with the floating point type.
-  The floating point environment (26.3) for these operations may be
+  The floating point environment (26.3) for *floating* operations may be
   different than the calling thread's floating point environment.
 
