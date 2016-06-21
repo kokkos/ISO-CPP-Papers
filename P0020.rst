@@ -44,8 +44,7 @@ Insert into N4594 29.2 Header <atomic> synopsis
   | // *29.5, generic types*
   | template<> struct atomic< *floating* >;
   |
-  | // *29.6.3, arithmetic operations on atomic types*
-  | // *In the following declarations, atomic-floating is* atomic<T>.
+  | // *29.6.5, specialization for floating-point types.
   |
   | *floating* atomic_fetch_add(volatile *atomic-floating* * , *floating*) noexcept ; 
   | *floating* atomic_fetch_add( *atomic-floating* * , *floating*) noexcept ; 
@@ -59,11 +58,13 @@ Insert into N4594 29.2 Header <atomic> synopsis
 Add to N4594 29.5, Atomic Types, before 29.5p1.
 
   |  template<> struct atomic< *floating* > {
-  |    bool is_lock_free() const volatile noexcept
-  |    bool is_lock_free() const noexcept
+  |    bool is_lock_free() const volatile noexcept;
+  |    bool is_lock_free() const noexcept;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    void store( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
   |    void store( *floating* , memory_order = memory_order_seq_cst ) noexcept;
+  |    *floating* load(memory_order = memory_order_seq_cst) const volatile noexcept;
+  |    *floating* load(memory_order = memory_order_seq_cst) const noexcept;
   |    operator *floating* () const volatile noexcept;
   |    operator *floating* () const noexcept;
   |    *floating* exchange( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
@@ -91,8 +92,8 @@ Add to N4594 29.5, Atomic Types, before 29.5p1.
   |
   |    *floating* operator+=( *floating* ) volatile noexcept;
   |    *floating* operator+=( *floating* ) noexcept;
-  |    *floating* operator-=( *floating* operand ) volatile noexcept;
-  |    *floating* operator-=( *floating* operand ) noexcept;
+  |    *floating* operator-=( *floating* ) volatile noexcept;
+  |    *floating* operator-=( *floating* ) noexcept;
   |  };
 
 Insert N4594 29.6.3p3:
