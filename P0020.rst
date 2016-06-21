@@ -34,6 +34,10 @@ Motivation
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic addition on an object conforming to the atomic<T> where T is
 a *floating* type (N4594 3.9.1p8).
+
+This paper **does not** include proposed extension of the named atomic type (N4594 Table 163),
+or by implication extension of the C \_Atomic qualification for floating point types.
+
 This capability is critical for high performance computing (HPC) applications.
 
 Proposal
