@@ -1,10 +1,10 @@
 ===================================================================
-P0019r2 : Atomic View
+D0019r3 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r2
-:Date: 2016-03-14
+:Number: D0019r3
+:Date: 2016-06-22
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -14,14 +14,16 @@ P0019r2 : Atomic View
 :Contact: ogiroux@nvidia.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Audience: SG1 Concurrency, Library Evoluton
+:Audience: Library Evolution, SG1 Concurrency
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
+
+
 
 .. sectnum::
 
-----------------------------------------
+******************************************************************
 Introduction
-----------------------------------------
+******************************************************************
 
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
@@ -31,15 +33,7 @@ The proposal is in five parts:
 (3) application of this concept applied to members of a very large array, and
 (4) motivating use cases and illustrative examples.
 
-
-  |  namespace std {
-  |  namespace experimental {
-  |    template< class T > atomic_view ;
-  |    template< class T > atomic_array_view ;
-  |  }}
-
-
-Note: Feedback from SG1 Library Evolution Working Group (LEWG) on P0009r0,
+Note: Feedback from Library Evolution Working Group (LEWG) on P0009r0,
 Polymorphic Multidimensional Array View, noted that the term *view* 
 has the connotation of read-only. In response the P0009r0 *array_view*
 name has been revised to **array_ref** in P0009r1.
@@ -47,6 +41,33 @@ The proposed names **atomic_view** and **atomic_array_view** may have
 the same feedback from LEWG, potentially resulting in a similar
 naming revision.
 
+Note: Concurrency and Parallelism Study Group (SG1) continues to
+address formal wording for correctness in the context of the
+formal memory model.
+Revisions to this wording is not expected to effect the interface.
+
+******************************************************************
+Proposal
+******************************************************************
+
+Addition to Atomics Synopsis [atomics.syn].
+
+  |  namespace std {
+  |  namespace experimental {
+  |    template< class T > *atomic_view_concept* ;
+  |    template< class T > atomic_view ;
+  |    template< class T > atomic_array_view ;
+  |    template<> atomic_view< *integral* >;
+  |    template<> atomic_array_view< *integral* >;
+  |    template< class T > atomic_view< T * >;
+  |    template< class T > atomic_array_view< T * >;
+  |  }}
+  |
+  |
+  |  *In the following declarations, atomic-type is either*
+  |  atomic<T>, atomic_view<T>, *atomic_view_concept* <T> *,*
+  |  *or a named base class T from*
+  
 
 -------------------------------------------
 Atomic View Concept
@@ -66,6 +87,8 @@ included to define requirements for types conforming
 to the *atomic-view-concept* and does not imply the existance
 of a template class of this name.
 This specification is to appear in 29.5 Atomic Types.
+
+... update for compliance with current spec
 
   |  template< class T >
   |  struct *atomic-view-concept* {
@@ -92,7 +115,14 @@ This specification is to appear in 29.5 Atomic Types.
   |    // it is similar to the std::unique_ptr operator.
   |    explicit constexpr operator bool () const noexcept;
   |  };
-  |
+
+... minimum_required_alignment
+...   to get functionality at all versus to get best performing functionality such as lock-free
+...   motivate - to pass to align_as
+...   state at least align_of(T)
+...   just name "required_alignment"
+
+
   |  template<> struct *atomic-view-concept* < *integral* > {
   |    // The following members satisfy the specifications in 29.6 Operations on atomic types,
   |    // with the difference that member functions are non-volatile and const.
@@ -114,8 +144,12 @@ This specification is to appear in 29.5 Atomic Types.
   |    *integral* operator^=( *integral* ) const noexcept;
   |  };
 
+... for pointer types
+... new paper for floating types
+
   Requires: Type *T* is trivially copyable.
 
+... existing note also applies:
 Lock-free *atomic-view-concept* conform to the address-free property as in 29.4p3.
 
 Constructors and assignment operators of non-lock-free *atomic-view-concept*
@@ -203,7 +237,7 @@ acquired resource as opposed to re-acquiring that resource.
   If the **atomic_view** wrapped object is of a
   class or aggregate type then members of that object
   shall not be wrapped by an **atomic_view** object.
-  If he **atomic_view** wrapped object is a member of an array
+  If the **atomic_view** wrapped object is a member of an array
   that array shall not be wrapped by an **atomic_array_view**.
 
   Effects: References the non-atomic object.
@@ -442,4 +476,8 @@ Wrapping constructors for standard contiguous containers would also be valid.
 However, such constructors could have potential confusion as to whether
 he atomic_array_view would or would not track resizing operations applied to the input container.
 
+
+******************************************************************
+Revisions
+******************************************************************
 

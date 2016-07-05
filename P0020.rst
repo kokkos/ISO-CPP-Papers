@@ -112,6 +112,12 @@ Append to Remark paragraph 29.6.5p31.
   For *floating* types atomic arithmatic operations
   *should* conform to **std::numeric_limits<** *floating* **>** (18.3.2)
   traits associated with the floating point type.
-  The floating point environment (26.3) for *floating* operations may be
+
+... C floating macros?
+
+  The floating point environment (26.4) for *floating* operations may be
   different than the calling thread's floating point environment.
+
+... implementation defined environment and tell what it is
+
 
