@@ -19,7 +19,7 @@ DXXXXX : Executor
 Conceptual Elements
 ------------------------------------------------------------------------------
 
-**Intruction Stream**
+**Instruction Stream**
   Code to be run in a form appropriate for the target execution architecture.
 
 **Execution Architecture**
