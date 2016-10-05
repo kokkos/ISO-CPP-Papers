@@ -668,7 +668,7 @@ P0019r3
 
   - Align proposal with content of corresponding sections in N5131, 2016-07-15.
 
-  - Remove the *one root wrapping constructor** requirement from **atomic_array_view**.
+  - Remove the *one root wrapping constructor* requirement from **atomic_array_view**.
 
   - Other minor revisions responding to feedback from SG1 @ Oulu.
 

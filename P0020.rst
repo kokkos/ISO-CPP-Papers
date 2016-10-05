@@ -13,7 +13,7 @@ P0020r3 : Floating Point Atomic
 :Author: Olivier Giroux
 :Contact: ogiroux@nvidia.com
 :Author: JF Bastien
-:Contact: jfb@google.com
+:Contact: jf@jfbastien.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Audience: SG1 Concurrency, Library Evolution
