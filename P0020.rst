@@ -1,10 +1,10 @@
 ===================================================================
-D0020r3 : Floating Point Atomic
+P0020r3 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0020r3
-:Date: 2016-06-21
+:Number: P0020r3
+:Date: 2016-10-14
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -19,80 +19,76 @@ D0020r3 : Floating Point Atomic
 :Audience: SG1 Concurrency, Library Evolution
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
 
-+------------+-------------------------------------------------------------+
-| **Revision History**                                                     |
-+------------+-------------------------------------------------------------+
-| D0020r3    | Update in conformance with N4594.                           |
-|            | Remove reference to *atomic-view* paper.                    |
-+------------+-------------------------------------------------------------+
 
-.. sectnum::
-
+******************************************************************
 Motivation
-----------------------------------------
+******************************************************************
 
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic addition on an object conforming to the atomic<T> where T is
-a *floating* type (N4594 3.9.1p8).
+a *floating point* type (N5131 3.9.1p8).
 
-This paper **does not** include proposed extension of the named atomic type (N4594 Table 163),
-or by implication extension of the C \_Atomic qualification for floating point types.
+This paper **does not** include proposed extension
+of the named atomic type (N5131 Tables 134 and 135),
+or by implication extension of the C \_Atomic qualification
+for *floating* types.
 
-This capability is critical for high performance computing (HPC) applications.
+The capability for atomic addition on floating point types
+critical for high performance computing (HPC) applications.
+The need is for extension of *atomic* and
+*atomic_view* (P0019) for floating point types.
 
+
+******************************************************************
 Proposal
-----------------------------------------
+******************************************************************
 
-Insert into N4594 29.2 Header <atomic> synopsis
+-------------------------------------------
+*add to* 29.2 Header <atomic> synopsis
+-------------------------------------------
 
-  | // *29.5, generic types*
-  | template<> struct atomic< *floating* >;
-  |
-  | // *29.6.5, specialization for floating-point types.*
-  |
-  | *floating* atomic_fetch_add(volatile *atomic-floating* * , *floating*) noexcept ; 
-  | *floating* atomic_fetch_add( *atomic-floating* * , *floating*) noexcept ; 
-  | *floating* atomic_fetch_add_explicit(volatile *atomic-floating* * , *floating* , memory_order ) noexcept ; 
-  | *floating* atomic_fetch_add_explicit( *atomic-floating* * , *floating* , memory_order ) noexcept ; 
-  | *floating* atomic_fetch_sub(volatile *atomic-floating* * , *floating*) noexcept ; 
-  | *floating* atomic_fetch_sub( *atomic-floating* * , *floating*) noexcept ; 
-  | *floating* atomic_fetch_sub_explicit(volatile *atomic-floating* * , *floating* , memory_order ) noexcept ; 
-  | *floating* atomic_fetch_sub_explicit( *atomic-floating* * , *floating* , memory_order ) noexcept ; 
+  |  namespace std {
+  |    template<> stuct atomic< *floating* >;
+  |  }
 
-Add to N4594 29.5, Atomic Types, before 29.5p1.
+-------------------------------------------
+*add to* 29.5 Atomic Types
+-------------------------------------------
 
   |  template<> struct atomic< *floating* > {
-  |    bool is_lock_free() const volatile noexcept;
-  |    bool is_lock_free() const noexcept;
+  |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |    bool is_lock_free() volatile noexcept;
+  |    bool is_lock_free() noexcept;
   |    void store( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
   |    void store( *floating* , memory_order = memory_order_seq_cst ) noexcept;
-  |    *floating* load(memory_order = memory_order_seq_cst) const volatile noexcept;
-  |    *floating* load(memory_order = memory_order_seq_cst) const noexcept;
-  |    operator *floating* () const volatile noexcept;
-  |    operator *floating* () const noexcept;
+  |    *floating* load( memory_order = memory_order_seq_cst ) volatile noexcept;
+  |    *floating* load( memory_order = memory_order_seq_cst ) noexcept;
+  |    operator *floating* () volatile noexcept ;
+  |    operator *floating* () noexcept ;
   |    *floating* exchange( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
   |    *floating* exchange( *floating* , memory_order = memory_order_seq_cst ) noexcept;
   |    bool compare_exchange_weak( *floating* & , *floating* , memory_order , memory_order ) volatile noexcept;
   |    bool compare_exchange_weak( *floating* & , *floating* , memory_order , memory_order ) noexcept;
-  |    bool compare_exchange_strong( *floating* & , *floating* , memory_order , memory_order ) volatile noexcept;
-  |    bool compare_exchange_strong( *floating* & , *floating* , memory_order , memory_order ) noexcept;
-  |    bool compare_exchange_weak( *floating* & , *floating* , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    bool compare_exchange_weak( *floating* & , *floating* , memory_order order = memory_order_seq_cst ) noexcept;
-  |    bool compare_exchange_strong( *floating* & , *floating* , memory_order order = memory_order_seq_cst ) volatile noexcept;
-  |    bool compare_exchange_strong( *floating* & , *floating* , memory_order order = memory_order_seq_cst ) noexcept;
-  |    *floating* fetch_add( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    *floating* fetch_add( *floating* , memory_order = memory_order_seq_cst ) noexcept;
-  |    *floating* fetch_sub( *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    *floating* fetch_sub( *floating* , memory_order = memory_order_seq_cst ) noexcept;
+  |    bool compare_exchange_strong( *floating* & , *floating*  , memory_order , memory_order ) volatile noexcept;
+  |    bool compare_exchange_strong( *floating* & , *floating*  , memory_order , memory_order ) noexcept;
+  |    bool compare_exchange_weak( *floating* & , *floating*  , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |    bool compare_exchange_weak( *floating* & , *floating*  , memory_order = memory_order_seq_cst ) noexcept;
+  |    bool compare_exchange_strong( *floating* &, *floating* , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |    bool compare_exchange_strong( *floating* &, *floating* , memory_order = memory_order_seq_cst ) noexcept;
   |
-  |    atomic() noexcept = default;
-  |    constexpr atomic( *floating* ) noexcept;
-  |    atomic( const atomic & ) = delete ;
-  |    atomic & operator=( const atomic & ) = delete ;
-  |    atomic & operator=( const atomic & ) volatile = delete ;
-  |    *floating* operator=( *floating* ) volatile noexcept;
-  |    *floating* operator=( *floating* ) noexcept;
+  |    *floating* fetch_add( *floating* , memory_order = memory_order_seq_cst) volatile noexcept;
+  |    *floating* fetch_add( *floating* , memory_order = memory_order_seq_cst) noexcept;
+  |    *floating* fetch_sub( *floating* , memory_order = memory_order_seq_cst) volatile noexcept;
+  |    *floating* fetch_sub( *floating* , memory_order = memory_order_seq_cst) noexcept;
+  |
+  |    constexpr atomic() noexcept ;
+  |    atomic( atomic && ) noexcept ;
+  |    atomic( const atomic & ) noexcept ;
+  |    atomic & operator = ( atomic && ) noexcept ;
+  |    atomic & operator = ( const atomic & ) noexcept ;
+  |    *floating* operator=( *floating* ) volatile noexcept ;
+  |    *floating* operator=( *floating* ) noexcept ;
   |
   |    *floating* operator+=( *floating* ) volatile noexcept;
   |    *floating* operator+=( *floating* ) noexcept;
@@ -100,24 +96,43 @@ Add to N4594 29.5, Atomic Types, before 29.5p1.
   |    *floating* operator-=( *floating* ) noexcept;
   |  };
 
-Insert N4594 29.6.3p3:
+-------------------------------------------------------------------------
+*add to* 29.6.3 Arithmetic operations on atomic types
+-------------------------------------------------------------------------
 
-  In the declarations of these functions and function template specializations,
-  the name *floating* refers to a *floating* type and the name *atomic-floating*
-  refers to **atomic<** *floating* **>**.
+In the declarations of these functions and function template specializations,
+the name *floating* refers to a floating point type and the name
+*atomic-floating* refers to **atomic<** *floating* **>**.
 
+-------------------------------------------------------------------------
+*insert in* 29.6.5 Requirements for operations on atomic types
+-------------------------------------------------------------------------
 
-Append to Remark paragraph 29.6.5p31.
+*regarding arithmetic operations*
 
-  For *floating* types atomic arithmatic operations
+| **C A::fetch_**\ *key*\ **(M operand, memory_order order = memory_order_seq_cst) volatile noexcept;**
+| **C A::fetch_**\ *key*\ **(M operand, memory_order order = memory_order_seq_cst) noexcept;**
+
+*append to 29.6.5p31 Remark*
+
+  For *floating* types, if the result is not mathematically defined or
+  not in the range of representable values for its type (5p4),
+  the result is undefined but the operations otherwise have no
+  undefined behavior.
+  [Note:  Atomic arithmetic operations on *floating* types
   *should* conform to **std::numeric_limits<** *floating* **>** (18.3.2)
   traits associated with the floating point type.
+  The floating point environment (26.4) for atomic arithmetic operations
+  on *floating* type may be different than the calling thread's
+  floating point environment.  - end note]
 
-... C floating macros?
+******************************************************************
+Revision History
+******************************************************************
 
-  The floating point environment (26.4) for *floating* operations may be
-  different than the calling thread's floating point environment.
+------------------------------------------------------------
+P0020r3
+------------------------------------------------------------
 
-... implementation defined environment and tell what it is
-
+  - Align proposal with content of corresponding sections in N5131, 2016-07-15.
 
