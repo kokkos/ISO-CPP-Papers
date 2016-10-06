@@ -1,9 +1,9 @@
 ===================================================================
-Pxxxxr0 : Floating Point Atomic View
+P0440r0 : Floating Point Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: Pxxxxr0
+:Number: P0440r0
 :Date: 2016-10-14
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
@@ -17,7 +17,7 @@ Pxxxxr0 : Floating Point Atomic View
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Audience: SG1 Concurrency, Library Evolution
-:URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/Pxxxx.rst
+:URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0440.rst
 
 
 ******************************************************************
@@ -133,7 +133,7 @@ Revision History
 ******************************************************************
 
 ------------------------------------------------------------
-Pxxxxr0
+P0440r0
 ------------------------------------------------------------
 
   - Apply Floating Point Atomic (P0020) to Atomic View (P0019).
