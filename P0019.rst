@@ -58,7 +58,7 @@ The current proposal introduces the following additional types.
   |    template< class T > struct atomic_array_view;
   |  }}
 
-An alternative naming approach is to follow the
+An alternative naming convention is to follow the
 **atomic<T\*>** partial specialization strategy
 for naming.
 
@@ -123,6 +123,19 @@ atomic operations on the non-atomic members of the referenced array.
 The intent is for *atomic array view* to provide the
 best-performing implementation of atomic operations
 for the members of the array.  
+
+---------------------------------------------------------------
+Wrapping Constructor Error Response
+---------------------------------------------------------------
+
+The *wrapping constructor* of an atomic view is responsible
+for detecting potential errors associated with wrapping
+a non-atomic object.
+For example, if the object does satisfy alignment requirements or
+resides in memory where atomic operations are not supported
+(e.g, GPU registers).
+The wrapping constructor's response to such errors is
+to throw an exception, an alternative response is to abort.
 
 
 ******************************************************************

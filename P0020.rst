@@ -26,7 +26,7 @@ Motivation
 
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic addition on an object conforming to the atomic<T> where T is
-a *floating-point*-point* type (N5131 3.9.1p8).
+a *floating-point* type (N5131 3.9.1p8).
 
 This paper **does not** include proposed extension
 of the named atomic type (N5131 Tables 134 and 135),
@@ -69,8 +69,8 @@ Proposal
 
   |  template<> struct atomic< *floating-point* > {
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
-  |    bool is_lock_free() volatile noexcept;
-  |    bool is_lock_free() noexcept;
+  |    bool is_lock_free() const volatile noexcept;
+  |    bool is_lock_free() const noexcept;
   |    void store( *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
   |    void store( *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
   |    *floating-point* load( memory_order = memory_order_seq_cst ) volatile noexcept;
