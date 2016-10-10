@@ -52,10 +52,12 @@ The current proposal introduces the following additional types.
 
   |  namespace std {
   |  namespace experimental {
+  |
   |    template< class T > struct atomic_view;
   |    template<> struct atomic_view< *integral* >;
   |    template< class T > struct atomic_view<T\*>;
   |    template< class T > struct atomic_array_view;
+  |
   |  }}
 
 An alternative naming convention is to follow the
@@ -64,10 +66,12 @@ for naming.
 
   |  namespace std {
   |  namespace experimental {
+  |
   |    template< class T > struct atomic<T&> ;
   |    template<> struct atomic< *integral* & >;
   |    template< class T > struct atomic<T\*&>;
   |    template< class T > struct atomic<T[]>;
+  |
   |  }}
 
 -----------------------------------------------------
@@ -148,20 +152,24 @@ Proposal
 
   |  namespace std {
   |  namespace experimental {
+  |
   |    template< class T > struct atomic_view ;
-  |    template<> stuct atomic_view< *integral* >;
+  |    template<> struct atomic_view< *integral* >;
   |    template< class T > struct atomic_view< T \* >;
   |    template< class T > struct atomic_array_view ;
+  |
   |  }}
 
 Possible alternative naming:
 
   |  namespace std {
   |  namespace experimental {
+  |
   |    template< class T > struct atomic< T & > ;
-  |    template<> stuct atomic< *integral* & >;
+  |    template<> struct atomic< *integral* & >;
   |    template< class T > struct atomic< T \* & >;
   |    template< class T > struct atomic< T [] >;
+  |
   |  }}
   
 -------------------------------------------
