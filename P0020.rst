@@ -19,9 +19,19 @@ P0020r3 : Floating Point Atomic
 :Audience: SG1 Concurrency, Library Evolution
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0020.rst
 
+******************************************************************
+Revision History
+******************************************************************
+
+------------------------------------------------------------
+P0020r3
+------------------------------------------------------------
+
+  - Align proposal with content of corresponding sections in N5131, 2016-07-15.
+
 
 ******************************************************************
-Motivation
+Overview / Motivation
 ******************************************************************
 
 This paper proposes an extension to the atomic operations library [atomics]
@@ -113,10 +123,10 @@ Proposal
 
 In the declarations of these functions and function template specializations,
 the name *floating-point* refers to a floating point type and the name
-*atomic-floating-point* refers to **atomic<** *floating-point* **>**.
+*atomic-floating-point* refers to **atomic<**\ *floating-point*\ **>**.
 
 -------------------------------------------------------------------------
-*insert in* 29.6.5 Requirements for operations on atomic types
+*in* 29.6.5 Requirements for operations on atomic types
 -------------------------------------------------------------------------
 
 *regarding arithmetic operations*
@@ -128,29 +138,16 @@ the name *floating-point* refers to a floating point type and the name
 
   *Remark:* For signed integer types, arithmetic is defined to use
   two’s complement representation and there are no undefined results.
-
   For floating point types, if the result is not mathematically defined or
   not in the range of representable values for its type (5p4)
-  the result is unspecified, but the operations otherwise have no
-  undefined behavior.
+  the result is unspecified.
   [Note:  Atomic arithmetic operations on *floating-point*
   should conform to **std::numeric_limits<** *floating-point* **>**
   traits associated with the floating point type (18.3.2).
   The floating point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
   floating point environment.  - end note]
-
   For address types, the result may be an undefined address, but the operations
   otherwise have no undefined behavior.
 
-
-******************************************************************
-Revision History
-******************************************************************
-
-------------------------------------------------------------
-P0020r3
-------------------------------------------------------------
-
-  - Align proposal with content of corresponding sections in N5131, 2016-07-15.
 

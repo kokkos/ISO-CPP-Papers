@@ -1,0 +1,1001 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
+<title>P0019r3 : Atomic View</title>
+<meta name="date" content="2016-10-14" />
+<meta name="author" content="H. Carter Edwards" />
+<meta name="author" content="Hans Boehm" />
+<meta name="author" content="Olivier Giroux" />
+<meta name="author" content="James Reus" />
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="p0019r3-atomic-view">
+<h1 class="title">P0019r3 : Atomic View</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr class="field"><th class="docinfo-name">Project:</th><td class="field-body">ISO JTC1/SC22/WG21: Programming Language C++</td>
+</tr>
+<tr class="field"><th class="docinfo-name">Number:</th><td class="field-body">P0019r3</td>
+</tr>
+<tr><th class="docinfo-name">Date:</th>
+<td>2016-10-14</td></tr>
+<tr class="field"><th class="docinfo-name">Reply-to:</th><td class="field-body"><a class="reference external" href="mailto:hcedwar&#64;sandia.gov">hcedwar&#64;sandia.gov</a></td>
+</tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>H. Carter Edwards</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:hcedwar&#64;sandia.gov">hcedwar&#64;sandia.gov</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Hans Boehm</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:hboehm&#64;google.com">hboehm&#64;google.com</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Olivier Giroux</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:ogiroux&#64;nvidia.com">ogiroux&#64;nvidia.com</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>James Reus</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:reus1&#64;llnl.gov">reus1&#64;llnl.gov</a></td></tr>
+<tr class="field"><th class="docinfo-name">Audience:</th><td class="field-body">Library Evolution, SG1 Concurrency</td>
+</tr>
+<tr class="field"><th class="docinfo-name">URL:</th><td class="field-body"><a class="reference external" href="https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst">https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst</a></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="revision-history">
+<h1>Revision History</h1>
+<div class="section" id="p0019r3">
+<h2>P0019r3</h2>
+<blockquote>
+<ul class="simple">
+<li>Align proposal with content of corresponding sections in N5131, 2016-07-15.</li>
+<li>Remove the <em>one root wrapping constructor</em> requirement from <strong>atomic_array_view</strong>.</li>
+<li>Other minor revisions responding to feedback from SG1 &#64; Oulu.</li>
+</ul>
+</blockquote>
+</div>
+</div>
+<div class="section" id="overview-motivation-discussion">
+<h1>Overview / Motivation / Discussion</h1>
+<p>This paper proposes an extension to the atomic operations library [atomics]
+for atomic operations applied to non-atomic objects.</p>
+<div class="section" id="naming">
+<h2>Naming</h2>
+<p>Feedback from Library Evolution Working Group (LEWG) on P0009r0,
+Polymorphic Multidimensional Array View, noted that the term <em>view</em>
+has the connotation of read-only. In response the P0009r0 <em>array_view</em>
+name has been revised to <strong>array_ref</strong> in P0009r1.
+The proposed names <strong>atomic_view</strong> and <strong>atomic_array_view</strong> may have
+the same feedback from LEWG, potentially resulting in a similar
+naming revision.</p>
+<p>The current <strong>29.2 Header &lt;atomic&gt; synopsis</strong> contains the following.</p>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line-block">
+<div class="line">template&lt; class T &gt; struct atomic;</div>
+<div class="line">template&lt;&gt; struct atomic&lt; <em>integral</em> &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic&lt;T*&gt;;</div>
+</div>
+<div class="line">}</div>
+</div>
+</blockquote>
+<p>The current proposal introduces the following additional types.</p>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line">namespace experimental {</div>
+<div class="line"><br /></div>
+<div class="line-block">
+<div class="line">template&lt; class T &gt; struct atomic_view;</div>
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>integral</em> &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic_view&lt;T*&gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic_array_view;</div>
+<div class="line"><br /></div>
+</div>
+<div class="line">}}</div>
+</div>
+</blockquote>
+<p>An alternative naming convention is to follow the
+<strong>atomic&lt;T*&gt;</strong> partial specialization strategy
+for naming.</p>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line">namespace experimental {</div>
+<div class="line"><br /></div>
+<div class="line-block">
+<div class="line">template&lt; class T &gt; struct atomic&lt; T &amp; &gt; ;</div>
+<div class="line">template&lt;&gt; struct atomic&lt; <em>integral</em> &amp; &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic&lt; T * &amp; &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic&lt; T [] &gt;;</div>
+<div class="line"><br /></div>
+</div>
+<div class="line">}}</div>
+</div>
+</blockquote>
+</div>
+<div class="section" id="atomic-operations-on-a-single-non-atomic-object">
+<h2>Atomic Operations on a Single Non-atomic Object</h2>
+<p>An <em>atomic view</em> is used to perform
+atomic operations on referenced non-atomic object.
+The intent is for <em>atomic view</em> to provide the best-performing
+implementation of atomic operations for the non-atomic object type.
+All atomic operations performed through an <em>atomic view</em>
+on a referenced non-atomic object
+are atomic with respect to any other <em>atomic view</em> that references
+the same object, as defined by equality of pointers to that object.
+The intent is for atomic operations
+to directly update the referenced object.
+The <em>atomic view wrapping constructor</em> may acquire a resource,
+such as a lock from a collection of address-sharded locks,
+to perform atomic operations.
+Such <em>atomic view</em> objects are not lock-free and not address-free.
+When such a resource is necessary subsequent
+copy and move constructors and assignment operators
+may reduce overhead by copying or moving the previously
+acquired resource as opposed to re-acquiring that resource.</p>
+<p>Introducing concurrency within legacy codes may require
+replacing operations on existing non-atomic objects with atomic operations
+such that the non-atomic object cannot be replaced with a <strong>atomic</strong> object.</p>
+<p>An object may be heavily used non-atomically in well-defined phases
+of an application.  Forcing such objects to be exclusively <strong>atomic</strong>
+would incur an unnecessary performance penalty.</p>
+</div>
+<div class="section" id="atomic-operations-on-members-of-a-very-large-array">
+<h2>Atomic Operations on Members of a Very Large Array</h2>
+<p>High performance computing (HPC) applications use very large arrays.
+Computations with these arrays typically have distinct phases that
+allocate and initialize members of the array,
+update members of the array,
+and read members of the array.
+Parallel algorithms for initialization (e.g., zero fill)
+have non-conflicting access when assigning member values.
+Parallel algorithms for updates have conflicting access
+to members which must be guarded by atomic operations.
+Parallel algorithms with read-only access require best-performing
+streaming read access, random read access, vectorization,
+or other guaranteed non-conflicting HPC pattern.</p>
+<p>An <em>atomic array view</em> is used to perform
+atomic operations on the non-atomic members of the referenced array.
+The intent is for <em>atomic array view</em> to provide the
+best-performing implementation of atomic operations
+for the members of the array.</p>
+</div>
+<div class="section" id="wrapping-constructor-error-response">
+<h2>Wrapping Constructor Error Response</h2>
+<p>The <em>wrapping constructor</em> of an atomic view is responsible
+for detecting potential errors associated with wrapping
+a non-atomic object.
+For example, if the object does satisfy alignment requirements or
+resides in memory where atomic operations are not supported
+(e.g, GPU registers).
+The wrapping constructor's response to such errors is
+to throw an exception, an alternative response is to abort.</p>
+</div>
+</div>
+<div class="section" id="proposal">
+<h1>Proposal</h1>
+<div class="section" id="add-to-29-2-header-atomic-synopsis">
+<h2><em>add to</em> 29.2 Header &lt;atomic&gt; synopsis</h2>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line">namespace experimental {</div>
+<div class="line"><br /></div>
+<div class="line-block">
+<div class="line">template&lt; class T &gt; struct atomic_view ;</div>
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>integral</em> &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic_view&lt; T * &gt;;</div>
+<div class="line">template&lt; class T &gt; struct atomic_array_view ;</div>
+<div class="line"><br /></div>
+</div>
+<div class="line">}}</div>
+</div>
+</blockquote>
+</div>
+<div class="section" id="add-to-29-5-atomic-types">
+<h2><em>add to</em> 29.5 Atomic Types</h2>
+<blockquote>
+<div class="line-block">
+<div class="line">template&lt; class T &gt; struct atomic_view {</div>
+<div class="line-block">
+<div class="line">static constexpr size_t required_alignment = <em>implementation-defined</em> ;</div>
+<div class="line">static constexpr bool is_always_lock_free = <em>implementation-defined</em> ;</div>
+<div class="line">bool is_lock_free() const noexcept;</div>
+<div class="line">void store( T , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">T load( memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">operator T() const noexcept ;</div>
+<div class="line">T exchange( T , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( T&amp; , T , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( T&amp; , T , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( T&amp; , T , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( T&amp;, T, memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line">~atomic_view();</div>
+<div class="line">constexpr atomic_view() noexcept ;</div>
+<div class="line">atomic_view( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">T operator=(T) const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">explicit atomic_view( T &amp; obj ); // <em>wrapping</em> constructor</div>
+<div class="line">explicit constexpr operator bool () const noexcept; // <em>wraps</em></div>
+</div>
+<div class="line">};</div>
+<div class="line"><br /></div>
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>integral</em> &gt; {</div>
+<div class="line-block">
+<div class="line">static constexpr size_t required_alignment = <em>implementation-defined</em> ;</div>
+<div class="line">static constexpr bool is_always_lock_free = <em>implementation-defined</em> ;</div>
+<div class="line">bool is_lock_free() const noexcept;</div>
+<div class="line">void store( <em>integral</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><em>integral</em> load( memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">operator <em>integral</em> () const noexcept ;</div>
+<div class="line"><em>integral</em> exchange( <em>integral</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( <em>integral</em> &amp; , <em>integral</em> , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( <em>integral</em> &amp; , <em>integral</em>  , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( <em>integral</em> &amp; , <em>integral</em>  , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( <em>integral</em> &amp;, <em>integral</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line"><em>integral</em> fetch_add( <em>integral</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><em>integral</em> fetch_sub( <em>integral</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><em>integral</em> fetch_and( <em>integral</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><em>integral</em> fetch_or(  <em>integral</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><em>integral</em> fetch_xor( <em>integral</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line">~atomic_view();</div>
+<div class="line">constexpr atomic_view() noexcept ;</div>
+<div class="line">atomic_view( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( const atomic_view &amp; ) noexcept ;</div>
+<div class="line"><em>integral</em> operator=( <em>integral</em> ) const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">explicit atomic_view(  <em>integral</em>  &amp; obj ); // <em>wrapping</em> constructor</div>
+<div class="line">explicit constexpr operator bool () const noexcept; // <em>wraps</em></div>
+<div class="line"><br /></div>
+<div class="line"><em>integral</em> operator++(int) const noexcept;</div>
+<div class="line"><em>integral</em> operator--(int) const noexcept;</div>
+<div class="line"><em>integral</em> operator++() const noexcept;</div>
+<div class="line"><em>integral</em> operator--() const noexcept;</div>
+<div class="line"><em>integral</em> operator+=( <em>integral</em> ) const noexcept;</div>
+<div class="line"><em>integral</em> operator-=( <em>integral</em> ) const noexcept;</div>
+<div class="line"><em>integral</em> operator&amp;=( <em>integral</em> ) const noexcept;</div>
+<div class="line"><em>integral</em> operator|=( <em>integral</em> ) const noexcept;</div>
+<div class="line"><em>integral</em> operator^=( <em>integral</em> ) const noexcept;</div>
+</div>
+<div class="line">};</div>
+<div class="line"><br /></div>
+<div class="line">template&lt;class T&gt; struct atomic_view&lt; T * &gt; {</div>
+<div class="line-block">
+<div class="line">static constexpr size_t required_alignment = <em>implementation-defined</em> ;</div>
+<div class="line">static constexpr bool is_always_lock_free = <em>implementation-defined</em> ;</div>
+<div class="line">bool is_lock_free() const noexcept;</div>
+<div class="line">void store( T * , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">T * load( memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">operator T * () const noexcept ;</div>
+<div class="line">T * exchange( T * , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( T * &amp; , T * , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( T * &amp; , T *  , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( T * &amp; , T *  , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( T * &amp;, T * , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line">T * fetch_add( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line">T * fetch_sub( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line">~atomic_view();</div>
+<div class="line">constexpr atomic_view() noexcept ;</div>
+<div class="line">atomic_view( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view &amp; operator = ( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">T * operator=( T * ) const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">explicit atomic_view( T * &amp; obj ); // <em>wrapping</em> constructor</div>
+<div class="line">explicit constexpr operator bool () const noexcept; // <em>wraps</em></div>
+<div class="line"><br /></div>
+<div class="line">T * operator++(int) const noexcept;</div>
+<div class="line">T * operator--(int) const noexcept;</div>
+<div class="line">T * operator++() const noexcept;</div>
+<div class="line">T * operator--() const noexcept;</div>
+<div class="line">T * operator+=( ptrdiff_t ) const noexcept;</div>
+<div class="line">T * operator-=( ptrdiff_t ) const noexcept;</div>
+</div>
+<div class="line">};</div>
+<div class="line"><br /></div>
+<div class="line">template&lt; class T &gt; struct atomic_array_view {</div>
+<div class="line"><br /></div>
+<div class="line-block">
+<div class="line">static constexpr size_t required_alignment = <em>implementation defined</em> ;</div>
+<div class="line">static constexpr bool is_always_lock_free = <em>implementation defined</em> ;</div>
+<div class="line">bool is_lock_free() const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">explicit constexpr operator bool() const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">atomic_array_view( T * , size_t ); // wrapping constructor</div>
+<div class="line"><br /></div>
+<div class="line">constexpr atomic_array_view() noexcept ;</div>
+<div class="line">atomic_array_view( atomic_array_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_array_view( const atomic_array_view &amp; ) noexcept ;</div>
+<div class="line">atomic_array_view &amp; operator = ( atomic_array_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_array_view &amp; operator = ( const atomic_array_view &amp; ) noexcept ;</div>
+<div class="line">~atomic_array_view();</div>
+<div class="line"><br /></div>
+<div class="line">size_t size() const noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">atomic_view&lt;T&gt; operator[]( size_t ) const noexcept;</div>
+</div>
+<div class="line">};</div>
+</div>
+</blockquote>
+<p>1  There are generic class templates atomic&lt;T&gt;, atomic_view&lt;T&gt;, and atomic_array_view&lt;T&gt;.</p>
+</div>
+<div class="section" id="add-29-6-6-requirements-for-operations-on-atomic-view-types">
+<h2><em>add</em> 29.6.6 Requirements for operations on atomic view types</h2>
+<p>In the following operation definitions:</p>
+<blockquote>
+<ul class="simple">
+<li>an <em>A</em> refers to one of the atomic view types.</li>
+<li>a <em>C</em> refers to its corresponding non-atomic type</li>
+<li>an <em>M</em> refers to type of other argument for arithmetic operations.
+For integral atomic view types, <em>M</em> is <em>C</em>.
+For atomic view address types, <em>M</em> is <strong>std::ptrdiff_t</strong>.</li>
+</ul>
+</blockquote>
+<p><strong>static constexpr bool A::is_always_lock_free =</strong> <em>implementation-defined</em> <strong>;</strong></p>
+<blockquote>
+Is true if the atomic operations are always lock-free, and false otherwise.</blockquote>
+<p><strong>bool A::is_lock_free() const noexcept;</strong></p>
+<blockquote>
+Returns: <strong>true</strong> if the atomic operations are lock-free, <strong>false</strong> otherwise.</blockquote>
+<p><strong>static constexpr size_t required_alignment =</strong> <em>implementation-defined</em> <strong>;</strong></p>
+<blockquote>
+The required alignment of an object to be referenced by an atomic view,
+which is at least <tt class="docutils literal">align_of(C)</tt>.
+[Note: An architecture may support lock-free atomic operations
+on objects of type <em>C</em> only if those objects meet a required
+alignment.  The intent is for <em>atomic_view</em> to provide lock-free
+atomic operations whenever possible.
+For example, an architecture may be able to support lock-free
+operations on <strong>std::complex&lt;double&gt;</strong> only if aligned to 16 bytes
+and not 8 bytes. - end note]</blockquote>
+<p><strong>constexpr A::A() noexcept;</strong></p>
+<blockquote>
+Effects: <strong>*this</strong> does not reference an object.</blockquote>
+<p><strong>A::A( C &amp; object );</strong></p>
+<blockquote>
+<p>This <em>wrapping constructor</em> constructs an <em>atomic view</em>
+that references the non-atomic <em>object</em>.
+Atomic operations applied to <em>object</em> through a referencing
+<em>atomic view</em> are atomic with respect to atomic operations
+applied through any other <em>atomic view</em> that references that <em>object</em>.</p>
+<p>Requires: The referenced non-atomic <em>object</em> shall be
+aligned to <strong>required_alignment</strong>.
+The lifetime (3.8) of <strong>*this</strong>
+shall not exceed the lifetime of the referenced non-atomic object.
+While any <strong>atomic_view</strong> instance exists that references <em>object</em>
+all accesses of that <em>object</em> shall exclusively occur through those
+<strong>atomic_view</strong> instances.
+If the referenced <em>object</em> is of a class or aggregate type
+then members of that object shall not be concurrently
+wrapped by an <strong>atomic_view</strong> object.
+The referenced <em>object</em> shall not be a member of an array that
+is wrapped by an <strong>atomic_array_view</strong> .</p>
+<p>Effects: <strong>*this</strong> references the non-atomic <em>object</em>.
+[Note: The <em>wrapping constructor</em> may acquire a shared resource,
+such as a lock associated with the referenced object,
+to enable atomic operations applied to the referenced
+non-atomic object. - end note]</p>
+<p>Throws (aborts):
+If member atomic operation functions cannot be applied to the
+referenced <em>object</em> then the <em>wrapping</em> constructor shall throw (abort).
+[Note: For example, if the referenced object is not properly aligned
+or has automatic storage duration within an accelerator
+coprocessor (<em>e.g.</em>, a GPGPU) execution context. - end note]
+If the <em>wrapping constructor</em> attempts and fails to acquire
+resources such as a lock associated with the referenced
+<em>object</em> then the <em>wrapping constructor</em> shall throw (abort).</p>
+</blockquote>
+<div class="line-block">
+<div class="line"><strong>A::A( A &amp;&amp; rhs ) noexcept ;</strong></div>
+<div class="line"><strong>A &amp; A::operator = ( A &amp;&amp; rhs ) noexcept ;</strong></div>
+</div>
+<blockquote>
+Effects: If <em>rhs</em> references an object
+then <strong>*this</strong> references that object
+<strong>rhs</strong> no longer references an object,
+otherwise <strong>*this</strong> does not reference an object.
+If <em>rhs</em> also references an acquired shared resource
+then <strong>*this</strong> references that shared resource and
+<strong>rhs</strong> no longer references that shared resource,
+otherwise <strong>*this</strong> does not reference a shared resource.</blockquote>
+<div class="line-block">
+<div class="line"><strong>A::A( A const &amp; rhs ) noexcept ;</strong></div>
+<div class="line"><strong>A &amp; A::operator = ( A const &amp; rhs ) noexcept ;</strong></div>
+</div>
+<blockquote>
+Effects: If <em>rhs</em> references an object
+then <strong>*this</strong> references the same object,
+otherwise <strong>*this</strong> does not reference an object.
+If <em>rhs</em> also references a shared resource
+then <strong>*this</strong> references that shared resource,
+otherwise <strong>*this</strong> does not reference a shared resource.</blockquote>
+<p><strong>A::~A() noexcept ;</strong></p>
+<blockquote>
+Effects: If <strong>*this</strong> references an acquired shared resource
+then <strong>*this</strong> releases that shared resource.</blockquote>
+<p><strong>explicit constexpr A::operator bool () const noexept ;</strong></p>
+<blockquote>
+Returns: <strong>true</strong> if <strong>*this</strong> references a non-atomic object,
+otherwise <strong>false</strong>.</blockquote>
+<p><strong>void A::atomic_store( C::desired, memory_order order = memory_order_seq_cst ) const noexcept;</strong></p>
+<blockquote>
+<p>Requires: <strong>*this</strong> references an object.
+The order argument shall not be memory_order_consume,
+memory_order_acquire, nor memory_order_acq_rel.</p>
+<p>Effects: Atomically replaces the value referenced by <strong>*this</strong>
+with the value of <em>desired</em>.
+Memory is affected according to the value of order.</p>
+</blockquote>
+<p><strong>C A::operator=( C desired ) const noexcept;</strong></p>
+<blockquote>
+<p>Effects: As if by <strong>A::store(desired)</strong>.</p>
+<p>Returns: <em>desired</em>.</p>
+</blockquote>
+<p><strong>void A::atomic_load( memory_order order = memory_order_seq_cst ) const noexcept;</strong></p>
+<blockquote>
+<p>Requires: <strong>*this</strong> references an object.
+The order argument shall not be memory_order_release
+nor memory_order_acq_rel.</p>
+<p>Effects: Memory is affected according to the value of order.</p>
+<p>Returns: Atomically returns the value referenced by <strong>*this</strong> .</p>
+</blockquote>
+<p><strong>A::operator C() const noexcept;</strong></p>
+<blockquote>
+Effects:  As if by <strong>A::load()</strong>.</blockquote>
+<p><strong>C A::exchange(C desired, memory_order order = memory_order_seq_cst) noexcept;</strong></p>
+<blockquote>
+<p>Requires: <strong>*this</strong> references an object.</p>
+<p>Effects: Atomically replaces the value referenced by <strong>*this</strong>
+with <em>desired</em>. Memory is affected according to the value of <em>order</em>.
+These operations are atomic read-modify-write operations (1.10).</p>
+<p>Returns: Atomically returns the value referenced by <strong>*this</strong>
+immediately before the effects.</p>
+</blockquote>
+<div class="line-block">
+<div class="line"><strong>bool A::compare_exchange_weak(C &amp; expected, C desired, memory_order success, memory_order failure) const noexcept;</strong></div>
+<div class="line"><strong>bool A::compare_exchange_strong(C &amp; expected, C desired, memory_order success, memory_order failure) const noexcept;</strong></div>
+<div class="line"><strong>bool A::compare_exchange_weak(C &amp; expected, C desired,memory_order order = memory_order_seq_cst) const noexcept;</strong></div>
+<div class="line"><strong>bool A::compare_exchange_strong(C &amp; expected, C desired, memory_order order = memory_order_seq_cst) const noexcept;</strong></div>
+</div>
+<blockquote>
+<p>Requires: <strong>*this</strong> references an object.
+The <em>failure</em> argument shall not be
+memory_order_release nor memory_order_acq_rel.
+The <em>failure</em> argument shall be no stronger than the <em>success</em> argument.</p>
+<p>Effects: Retrieves the value in <em>expected</em>.
+It then atomically compares the contents of the memory referenced
+by <strong>*this</strong> for equality with that previously retrieved from
+<em>expected</em>, and if true, replaces the contents of the memory
+referenced by <strong>*this</strong> with that in <em>desired</em>.
+If and only if the comparison is true, memory is affected
+according to the value of success, and if the comparison is false,
+memory is affected according to the value of failure.
+When only one memory_order argument is supplied,
+the value of success is <em>order</em>, and the value of failure is <em>order</em>
+except that a value of memory_order_acq_rel shall be replaced by
+the value memory_order_acquire and a value of
+memory_order_release shall be replaced by the value memory_order_relaxed.
+If and only if the comparison is false then, after the atomic operation,
+the contents of the memory in <em>expected</em> are replaced by the value read
+from memory referenced by <strong>*this</strong> during the atomic comparison.
+If the operation returns true, these operations are atomic
+read-modify-write operations (1.10) on the memory referenced
+by <strong>*this</strong>.  Otherwise, these operations are atomic load operations
+on that memory.</p>
+<p>Returns: The result of the comparison.</p>
+<p>[Note: See 29.6.5 p24-27 notes and remarks. --end node]</p>
+</blockquote>
+<p><strong>A::fetch_</strong><em>key</em><strong>(M operand, memory_order order = memory_order_seq_cst) const noexcept;</strong></p>
+<blockquote>
+<p>Requires: <strong>*this</strong> references an object.</p>
+<p>Effects: Atomically replaces the value referenced by <strong>*this</strong>
+with the result of the computation applied to the value
+referenced by <strong>*this</strong> and the given operand.
+Memory is affected according to the value of <em>order</em>.
+These operations are atomic read-modify-write operations (1.10).</p>
+<p>Returns: Atomically, the value referenced by <strong>*this</strong>
+immediately before the effects.</p>
+<p>Remark: For signed integer types, arithmetic is defined to
+use two’s complement representation.
+There are no undefined results.
+For address types, the result may be an undefined address,
+but the operations otherwise have no undefined behavior.</p>
+</blockquote>
+<p><strong>A::operator</strong> <em>op</em> <strong>=(M operand) const noexcept;</strong></p>
+<blockquote>
+<p>Effects: As if by fetch_key (operand).</p>
+<p>Returns: fetch_key (operand) op operand.</p>
+</blockquote>
+<p><strong>A::operator++(int) const noexcept;</strong></p>
+<blockquote>
+Returns: fetch_add(1).</blockquote>
+<p><strong>A::operator--(int) const noexcept;</strong></p>
+<blockquote>
+Returns: fetch_sub(1).</blockquote>
+<p><strong>A::operator++() const noexcept;</strong></p>
+<blockquote>
+<p>Effects: As if by fetch_add(1).</p>
+<p>Returns: fetch_add(1) + 1.</p>
+</blockquote>
+<p><strong>C::operator--() const noexcept;</strong></p>
+<blockquote>
+<p>Effects: As if by fetch_sub(1).</p>
+<p>Returns: fetch_sub(1) - 1.</p>
+</blockquote>
+</div>
+<div class="section" id="add-29-6-7-requirements-for-operations-on-atomic-array-view-types">
+<h2><em>add</em> 29.6.7 Requirements for operations on atomic array view types</h2>
+<p>In the following operation definitions:</p>
+<blockquote>
+<ul class="simple">
+<li>an <em>A</em> refers to one of the atomic array view types.</li>
+<li>a <em>C</em> refers to its corresponding non-atomic type</li>
+</ul>
+</blockquote>
+<p><strong>static constexpr bool A::is_always_lock_free =</strong> <em>implementation-defined</em> <strong>;</strong></p>
+<blockquote>
+Is true if the atomic operations are always lock-free, and false otherwise.</blockquote>
+<p><strong>bool A::is_lock_free() const noexcept;</strong></p>
+<blockquote>
+Returns: <strong>true</strong> if atomic operations are lock-free, <strong>false</strong> otherwise.</blockquote>
+<p><strong>static constexpr size_t required_alignment =</strong> <em>implementation-defined</em> <strong>;</strong></p>
+<blockquote>
+<p>The required alignment of an array to be referenced by an atomic view,
+which is at least <tt class="docutils literal">align_of(C)</tt>.</p>
+<p>Remark: An architecture may support lock-free atomic operations
+on objects of type <em>C</em> only if those objects meet a required
+alignment.  The intent is for <em>atomic_array_view</em> to provide lock-free
+atomic operations whenever possible.
+[Note: For example, an architecture may be able to support lock-free
+operations on <strong>std::complex&lt;double&gt;</strong> only if aligned to 16 bytes
+and not 8 bytes. - end note]</p>
+</blockquote>
+<p><strong>constexpr A::A() noexcept;</strong></p>
+<blockquote>
+Effects: <strong>*this</strong> does not reference an array and
+therefore <strong>operator bool() == false</strong>.</blockquote>
+<p><strong>A::A( C * array , size_t length );</strong></p>
+<blockquote>
+<p>This <em>wrapping constructor</em> constructs an <em>atomic_array_view</em>
+that references an array of non-atomic elements
+spanning <tt class="docutils literal"><span class="pre">[array..array+length)</span></tt>.</p>
+<p>Requires: The referenced non-atomic array shall be
+aligned to <strong>required_alignment</strong>.
+The lifetime (3.8) of <strong>*this</strong>
+shall not exceed the lifetime of the referenced non-atomic array.
+All <strong>atomic_array_view</strong> instances that reference any element of
+the array shall reference the same span of the array.
+As long as any <strong>atomic_array_view</strong> instance exists that references
+array all accesses to members of that array shall exclusively occur
+through those <strong>atomic_array_view</strong> instances.
+No element of array is concurrently <em>wrap constructed</em> by an
+<strong>atomic_view</strong>.</p>
+<p>Effects: <strong>*this</strong> references the non-atomic array.
+Atomic operations on members of array are atomic with respect
+to atomic operations on members referenced through any other
+<strong>atomic_array_view</strong> instance.
+[Note: The <em>wrapping constructor</em> may acquire shared resources,
+such as a locks associated with the referenced array,
+to enable atomic operations applied to the referenced
+non-atomic members of referenced array. - end note]</p>
+<p>Throws (aborts):
+If member atomic operation functions cannot be applied to the
+referenced mmebers of <em>array</em> then the <em>wrapping</em> constructor
+shall throw (abort).
+[Note: For example, if the referenced array is not properly aligned
+or has automatic storage duration within an accelerator
+coprocessor (<em>e.g.</em>, a GPGPU) execution context. - end note]
+If the <em>wrapping constructor</em> attempts and fails to acquire
+resources such as a lock associated with the referenced
+<em>object</em> then the <em>wrapping constructor</em> shall throw (abort).</p>
+</blockquote>
+<div class="line-block">
+<div class="line"><strong>A::A( A &amp;&amp; rhs ) noexcept ;</strong></div>
+<div class="line"><strong>A &amp; A::operator = ( A &amp;&amp; rhs ) noexcept ;</strong></div>
+</div>
+<blockquote>
+Effects: If <em>rhs</em> references an array
+then <strong>*this</strong> references that array and
+<strong>rhs</strong> no longer references an array,
+otherwise <strong>*this</strong> does not reference an array.
+If <em>rhs</em> also references acquired shared resources
+then <strong>*this</strong> references those shared resources and
+<strong>rhs</strong> no longer references those shared resources,
+otherwise <strong>*this</strong> does not reference shared resources.</blockquote>
+<div class="line-block">
+<div class="line"><strong>A::A( A const &amp; rhs ) noexcept ;</strong></div>
+<div class="line"><strong>A &amp; A::operator = ( A const &amp; rhs ) noexcept ;</strong></div>
+</div>
+<blockquote>
+Effects: If <em>rhs</em> references an array
+then <strong>*this</strong> references the same array,
+otherwise <strong>*this</strong> does not reference an array.
+If <em>rhs</em> also references shared resources
+then <strong>*this</strong> references those shared resources,
+otherwise <strong>*this</strong> does not reference shared resources.</blockquote>
+<p><strong>A::~A() noexcept ;</strong></p>
+<blockquote>
+Effects: If <strong>*this</strong> references a acquired shared resources
+then <strong>*this</strong> releases those shared resources.</blockquote>
+<p><strong>explicit constexpr A::operator bool () const noexept ;</strong></p>
+<blockquote>
+Returns: <strong>true</strong> if <strong>*this</strong> references a non-atomic array,
+otherwise <strong>false</strong>.</blockquote>
+<p><strong>atomic_view&lt;C&gt; A::operator[]( size_t i ) const noexcept ;</strong></p>
+<blockquote>
+<p>Requires: <strong>i &lt; size()</strong> and the lifetime of the returned
+<strong>atomic_view</strong> s shall not exceed the lifetime of the
+associated <strong>atomic_array_view</strong>.
+[Note: Analogous to the lifetime of an iterator with respect to the
+lifetime of the associated container. - end note]</p>
+<p>Example usage:</p>
+</blockquote>
+<pre class="code c++ literal-block">
+<span class="comment single">// atomic array view wrapper constructor:
+</span><span class="name">atomic_array_view</span><span class="operator">&lt;</span><span class="name">T</span><span class="operator">&gt;</span> <span class="name">array</span><span class="punctuation">(</span> <span class="name">ptr</span> <span class="punctuation">,</span> <span class="name">N</span> <span class="punctuation">);</span>
+
+<span class="comment single">// atomic operation on a member:
+</span><span class="name">array</span><span class="punctuation">[</span><span class="name">i</span><span class="punctuation">].</span><span class="name">atomic</span><span class="operator">-</span><span class="name">operation</span><span class="punctuation">(...);</span>
+
+<span class="comment single">// atomic operations through a temporary value
+// within a concurrent function:
+</span><span class="name">atomic_array_view</span><span class="operator">&lt;</span><span class="name">T</span><span class="operator">&gt;::</span><span class="name">reference</span> <span class="name">x</span> <span class="operator">=</span> <span class="name">array</span><span class="punctuation">[</span><span class="name">i</span><span class="punctuation">];</span>
+<span class="name">x</span><span class="punctuation">.</span><span class="name">atomic</span><span class="operator">-</span><span class="name">operation</span><span class="operator">-</span><span class="name">a</span><span class="punctuation">(...);</span>
+<span class="name">x</span><span class="punctuation">.</span><span class="name">atomic</span><span class="operator">-</span><span class="name">operation</span><span class="operator">-</span><span class="name">b</span><span class="punctuation">(...);</span>
+</pre>
+<!--  -->
+</div>
+</div>
+</div>
+</body>
+</html>

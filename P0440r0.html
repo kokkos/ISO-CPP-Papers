@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
+<title>P0440r0 : Floating Point Atomic View</title>
+<meta name="date" content="2016-10-14" />
+<meta name="author" content="H. Carter Edwards" />
+<meta name="author" content="Hans Boehm" />
+<meta name="author" content="Olivier Giroux" />
+<meta name="author" content="JF Bastien" />
+<meta name="author" content="James Reus" />
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="p0440r0-floating-point-atomic-view">
+<h1 class="title">P0440r0 : Floating Point Atomic View</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr class="field"><th class="docinfo-name">Project:</th><td class="field-body">ISO JTC1/SC22/WG21: Programming Language C++</td>
+</tr>
+<tr class="field"><th class="docinfo-name">Number:</th><td class="field-body">P0440r0</td>
+</tr>
+<tr><th class="docinfo-name">Date:</th>
+<td>2016-10-14</td></tr>
+<tr class="field"><th class="docinfo-name">Reply-to:</th><td class="field-body"><a class="reference external" href="mailto:hcedwar&#64;sandia.gov">hcedwar&#64;sandia.gov</a></td>
+</tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>H. Carter Edwards</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:hcedwar&#64;sandia.gov">hcedwar&#64;sandia.gov</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Hans Boehm</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:hboehm&#64;google.com">hboehm&#64;google.com</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Olivier Giroux</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:ogiroux&#64;nvidia.com">ogiroux&#64;nvidia.com</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>JF Bastien</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:cxx&#64;jfbastien.com">cxx&#64;jfbastien.com</a></td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>James Reus</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:reus1&#64;llnl.gov">reus1&#64;llnl.gov</a></td></tr>
+<tr class="field"><th class="docinfo-name">Audience:</th><td class="field-body">SG1 Concurrency, Library Evolution</td>
+</tr>
+<tr class="field"><th class="docinfo-name">URL:</th><td class="field-body"><a class="reference external" href="https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0440.rst">https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0440.rst</a></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="revision-history">
+<h1>Revision History</h1>
+<div class="section" id="p0440r0">
+<h2>P0440r0</h2>
+<blockquote>
+<ul class="simple">
+<li>Apply Floating Point Atomic (P0020) to Atomic View (P0019).</li>
+</ul>
+</blockquote>
+</div>
+</div>
+<div class="section" id="overview-motivation">
+<h1>Overview / Motivation</h1>
+<p>This paper proposes an extension to the
+atomic operations library [atomics]
+for atomic addition on an object
+conforming to <strong>atomic_view&lt;T&gt;</strong> (P0019)
+where T is a <em>floating-point</em> type (N5131 3.9.1p8).
+This capability is critical for high performance
+computing (HPC) applications.</p>
+<div class="section" id="naming">
+<h2>Naming</h2>
+<p>Naming will conform to the to-be-determined naming
+convention selected for atomic view (P0019).
+The two currently proposed atomic view naming conventions
+are as follows.</p>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line">namespace experimental {</div>
+<div class="line-block">
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>floating-point</em> &gt;;</div>
+</div>
+<div class="line">}}</div>
+</div>
+</blockquote>
+<p>OR</p>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line">namespace experimental {</div>
+<div class="line-block">
+<div class="line">template&lt;&gt; struct atomic&lt; <em>floating-point</em> &amp; &gt;;</div>
+</div>
+<div class="line">}}</div>
+</div>
+</blockquote>
+</div>
+</div>
+<div class="section" id="proposal">
+<h1>Proposal</h1>
+<div class="section" id="add-to-29-2-header-atomic-synopsis">
+<h2><em>add to</em> 29.2 Header &lt;atomic&gt; synopsis</h2>
+<blockquote>
+<div class="line-block">
+<div class="line">namespace std {</div>
+<div class="line-block">
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>floating-point</em> &gt;;</div>
+</div>
+<div class="line">}</div>
+</div>
+</blockquote>
+</div>
+<div class="section" id="add-to-29-5-atomic-types">
+<h2><em>add to</em> 29.5 Atomic Types</h2>
+<blockquote>
+<div class="line-block">
+<div class="line">template&lt;&gt; struct atomic_view&lt; <em>floating-point</em> &gt; {</div>
+<div class="line-block">
+<div class="line">static constexpr size_t required_alignment = <em>implementation-defined</em> ;</div>
+<div class="line">static constexpr bool is_always_lock_free = <em>implementation-defined</em> ;</div>
+<div class="line">bool is_lock_free() const noexcept;</div>
+<div class="line">void store( <em>floating-point</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><em>floating-point</em> load( memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">operator <em>floating-point</em> () const noexcept ;</div>
+<div class="line"><em>floating-point</em> exchange( <em>floating-point</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( <em>floating-point</em> &amp; , <em>floating-point</em> , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( <em>floating-point</em> &amp; , <em>floating-point</em>  , memory_order , memory_order ) const noexcept;</div>
+<div class="line">bool compare_exchange_weak( <em>floating-point</em> &amp; , <em>floating-point</em>  , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line">bool compare_exchange_strong( <em>floating-point</em> &amp;, <em>floating-point</em> , memory_order = memory_order_seq_cst ) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line"><em>floating-point</em> fetch_add( <em>floating-point</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><em>floating-point</em> fetch_sub( <em>floating-point</em> , memory_order = memory_order_seq_cst) const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line">constexpr atomic_view() noexcept ;</div>
+<div class="line">atomic_view( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic_view( const atomic_view &amp; ) noexcept ;</div>
+<div class="line">atomic &amp; operator = ( atomic_view &amp;&amp; ) noexcept ;</div>
+<div class="line">atomic &amp; operator = ( const atomic_view &amp; ) noexcept ;</div>
+<div class="line"><em>floating-point</em> operator=( <em>floating-point</em> ) noexcept ;</div>
+<div class="line"><br /></div>
+<div class="line">explicit atomic_view( <em>floating-point</em> &amp; obj ) noexcept ;</div>
+<div class="line">explicit constexpr operator bool () const noexcept;</div>
+<div class="line"><br /></div>
+<div class="line"><em>floating-point</em> operator+=( <em>floating-point</em> ) const ;</div>
+<div class="line"><em>floating-point</em> operator-=( <em>floating-point</em> ) const ;</div>
+</div>
+<div class="line">};</div>
+</div>
+</blockquote>
+</div>
+<div class="section" id="in-29-6-6-requirements-for-operations-on-atomic-view-types">
+<h2><em>in</em> 29.6.6 Requirements for operations on atomic view types</h2>
+<p><em>regarding arithmetic operations</em></p>
+<div class="line-block">
+<div class="line"><strong>C A::fetch_</strong><em>key</em><strong>(M operand, memory_order order = memory_order_seq_cst) const noexcept;</strong></div>
+</div>
+<p><em>update remark as follows</em></p>
+<blockquote>
+<em>Remark:</em> For signed integer types, arithmetic is defined to use
+two’s complement representation <s>. There</s> <u>and there</u> are no undefined results.
+<u>For floating point types, if the result is not mathematically defined or
+not in the range of representable values for its type (5p4)
+the result is unspecified.
+[Note:  Atomic arithmetic operations on <em>floating-point</em>
+should conform to <strong>std::numeric_limits&lt;</strong> <em>floating-point</em> <strong>&gt;</strong>
+traits associated with the floating point type (18.3.2).
+The floating point environment (26.4) for atomic arithmetic operations
+on <em>floating-point</em> may be different than the calling thread's
+floating point environment.  - end note]</u>
+For address types, the result may be an undefined address, but the operations
+otherwise have no undefined behavior.</blockquote>
+</div>
+</div>
+</div>
+</body>
+</html>

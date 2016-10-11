@@ -18,11 +18,24 @@ P0019r3 : Atomic View
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
 
 
+******************************************************************
+Revision History
+******************************************************************
 
-.. sectnum::
+------------------------------------------------------------------------
+P0019r3
+------------------------------------------------------------------------
+
+  - Align proposal with content of corresponding sections in N5131, 2016-07-15.
+
+  - Remove the *one root wrapping constructor* requirement from **atomic_array_view**.
+
+  - Other minor revisions responding to feedback from SG1 @ Oulu.
+
+
 
 ******************************************************************
-Introduction
+Overview / Motivation / Discussion
 ******************************************************************
 
 This paper proposes an extension to the atomic operations library [atomics]
@@ -67,10 +80,10 @@ for naming.
   |  namespace std {
   |  namespace experimental {
   |
-  |    template< class T > struct atomic<T&> ;
+  |    template< class T > struct atomic< T & > ;
   |    template<> struct atomic< *integral* & >;
-  |    template< class T > struct atomic<T\*&>;
-  |    template< class T > struct atomic<T[]>;
+  |    template< class T > struct atomic< T \* & >;
+  |    template< class T > struct atomic< T [] >;
   |
   |  }}
 
@@ -160,18 +173,6 @@ Proposal
   |
   |  }}
 
-Possible alternative naming:
-
-  |  namespace std {
-  |  namespace experimental {
-  |
-  |    template< class T > struct atomic< T & > ;
-  |    template<> struct atomic< *integral* & >;
-  |    template< class T > struct atomic< T \* & >;
-  |    template< class T > struct atomic< T [] >;
-  |
-  |  }}
-  
 -------------------------------------------
 *add to* 29.5 Atomic Types
 -------------------------------------------
@@ -299,7 +300,7 @@ Possible alternative naming:
   |    atomic_view<T> operator[]( size_t ) const noexcept;
   |  };
 
-1  There are generic class templates atomic<T>, atomic_view<T>, and atomic_arrayview<T>.
+1  There are generic class templates atomic<T>, atomic_view<T>, and atomic_array_view<T>.
 
 -------------------------------------------------------------------------
 *add* 29.6.6 Requirements for operations on atomic view types
@@ -499,7 +500,7 @@ In the following operation definitions:
 
   Requires: **\*this** references an object.
 
-  Effects: Atomically replaces the value referenced by **\*this**s
+  Effects: Atomically replaces the value referenced by **\*this**
   with the result of the computation applied to the value
   referenced by **\*this** and the given operand.
   Memory is affected according to the value of *order*.
@@ -586,7 +587,7 @@ In the following operation definitions:
 
   This *wrapping constructor* constructs an *atomic_array_view*
   that references an array of non-atomic elements
-  spanning *[array..array+length)*.
+  spanning ``[array..array+length)``.
 
   Requires: The referenced non-atomic array shall be
   aligned to **required_alignment**.
@@ -678,20 +679,5 @@ In the following operation definitions:
   x.atomic-operation-b(...);
 
 ..
-
-******************************************************************
-Revision History
-******************************************************************
-
-------------------------------------------------------------------------
-P0019r3
-------------------------------------------------------------------------
-
-  - Align proposal with content of corresponding sections in N5131, 2016-07-15.
-
-  - Remove the *one root wrapping constructor* requirement from **atomic_array_view**.
-
-  - Other minor revisions responding to feedback from SG1 @ Oulu.
-
 
 
