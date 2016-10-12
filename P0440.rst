@@ -13,7 +13,7 @@ P0440r0 : Floating Point Atomic View
 :Author: Olivier Giroux
 :Contact: ogiroux@nvidia.com
 :Author: JF Bastien
-:Contact: cxx@jfbastien.com
+:Contact: jfbastien@apple.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Audience: SG1 Concurrency, Library Evolution
