@@ -3,8 +3,8 @@ P0019r3 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r3
-:Date: 2016-10-14
+:Number: P0019r4
+:Date: 2016-11-09
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -32,6 +32,14 @@ P0019r3
 
   - Other minor revisions responding to feedback from SG1 @ Oulu.
 
+------------------------------------------------------------------------
+P0019r4
+------------------------------------------------------------------------
+
+  - wrapper constructor strengthen requires clause and omit throws clause
+
+  - Note types must be trivially copyable
+
 
 
 ******************************************************************
@@ -40,6 +48,8 @@ Overview / Motivation / Discussion
 
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
+As required by [atomics.types.generic] 20.5p1 the wrapped type **T**
+must be trivially copiable.
 
 -----------------------------------------------------
 Naming
@@ -365,6 +375,11 @@ In the following operation definitions:
   wrapped by an **atomic_view** object.
   The referenced *object* shall not be a member of an array that
   is wrapped by an **atomic_array_view** .
+  [Note: Other implementation dependent conditions may exist.
+  For example, successful acquisition of a lock associated with
+  the referenced *object* ,
+  or the referenced object cannot have automatic storage duration
+  within a GPGPU execution context. - end note]
 
   Effects: **\*this** references the non-atomic *object*.
   [Note: The *wrapping constructor* may acquire a shared resource,
@@ -372,15 +387,6 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
 
-  Throws (aborts):
-  If member atomic operation functions cannot be applied to the
-  referenced *object* then the *wrapping* constructor shall throw (abort).
-  [Note: For example, if the referenced object is not properly aligned
-  or has automatic storage duration within an accelerator
-  coprocessor (*e.g.*, a GPGPU) execution context. - end note]
-  If the *wrapping constructor* attempts and fails to acquire
-  resources such as a lock associated with the referenced
-  *object* then the *wrapping constructor* shall throw (abort).
 
 | **A::A( A && rhs ) noexcept ;**
 | **A & A::operator = ( A && rhs ) noexcept ;**
@@ -406,8 +412,8 @@ In the following operation definitions:
 
 **A::~A() noexcept ;**
 
-  Effects: If **\*this** references an acquired shared resource
-  then **\*this** releases that shared resource.
+  Effects: [Note: If **\*this** references an acquired shared resource
+  then **\*this** releases that shared resource. - end note]
 
 **explicit constexpr A::operator bool () const noexept ;**
 
@@ -600,6 +606,11 @@ In the following operation definitions:
   through those **atomic_array_view** instances.
   No element of array is concurrently *wrap constructed* by an
   **atomic_view**.
+  [Note: Other implementation dependent conditions may exist.
+  For example, successful acquisition of a locks associated with
+  the referenced *array* ,
+  or the referenced array cannot have automatic storage duration
+  within a GPGPU execution context. - end note]
 
   Effects: **\*this** references the non-atomic array.
   Atomic operations on members of array are atomic with respect
@@ -610,16 +621,6 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic members of referenced array. - end note]
 
-  Throws (aborts):
-  If member atomic operation functions cannot be applied to the
-  referenced mmebers of *array* then the *wrapping* constructor
-  shall throw (abort).
-  [Note: For example, if the referenced array is not properly aligned
-  or has automatic storage duration within an accelerator
-  coprocessor (*e.g.*, a GPGPU) execution context. - end note]
-  If the *wrapping constructor* attempts and fails to acquire
-  resources such as a lock associated with the referenced
-  *object* then the *wrapping constructor* shall throw (abort).
 
 | **A::A( A && rhs ) noexcept ;**
 | **A & A::operator = ( A && rhs ) noexcept ;**
@@ -645,8 +646,8 @@ In the following operation definitions:
 
 **A::~A() noexcept ;**
 
-  Effects: If **\*this** references a acquired shared resources
-  then **\*this** releases those shared resources.
+  Effects: [Note: If **\*this** references acquired shared resources
+  then **\*this** releases those shared resources. - end note]
 
 **explicit constexpr A::operator bool () const noexept ;**
 
@@ -657,7 +658,7 @@ In the following operation definitions:
 **atomic_view<C> A::operator[]( size_t i ) const noexcept ;**
 
   Requires: **i < size()** and the lifetime of the returned
-  **atomic_view** s shall not exceed the lifetime of the
+  **atomic_view**\ s shall not exceed the lifetime of the
   associated **atomic_array_view**.
   [Note: Analogous to the lifetime of an iterator with respect to the
   lifetime of the associated container. - end note]
@@ -674,7 +675,7 @@ In the following operation definitions:
 
   // atomic operations through a temporary value 
   // within a concurrent function:
-  atomic_array_view<T>::reference x = array[i];
+  auto x = array[i];
   x.atomic-operation-a(...);
   x.atomic-operation-b(...);
 

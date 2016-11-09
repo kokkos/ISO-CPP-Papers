@@ -98,8 +98,8 @@ Proposal
   |    constexpr atomic_view() noexcept ;
   |    atomic_view( atomic_view && ) noexcept ;
   |    atomic_view( const atomic_view & ) noexcept ;
-  |    atomic & operator = ( atomic_view && ) noexcept ;
-  |    atomic & operator = ( const atomic_view & ) noexcept ;
+  |    atomic_view & operator = ( atomic_view && ) noexcept ;
+  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
   |    *floating-point* operator=( *floating-point* ) noexcept ;
   |
   |    explicit atomic_view( *floating-point* & obj ) noexcept ;
@@ -122,15 +122,15 @@ Proposal
 
   *Remark:* For signed integer types, arithmetic is defined to use
   two’s complement representation and there are no undefined results.
-  For floating point types, if the result is not mathematically defined or
+  For floating-point types, if the result is not mathematically defined or
   not in the range of representable values for its type (5p4)
   the result is unspecified.
   [Note:  Atomic arithmetic operations on *floating-point*
   should conform to **std::numeric_limits<** *floating-point* **>**
-  traits associated with the floating point type (18.3.2).
-  The floating point environment (26.4) for atomic arithmetic operations
+  traits associated with the floating-point type (18.3.2).
+  The floating-point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
-  floating point environment.  - end note]
+  floating-point environment.  - end note]
   For address types, the result may be an undefined address, but the operations
   otherwise have no undefined behavior.
 
