@@ -33,7 +33,9 @@ P0020r3
 P0020r4
 ------------------------------------------------------------
 
-  - Add hyphenation to "floating point"
+  - Editorial, add hyphenation to "floating point"
+
+  - 2016-11-09 Issaquah SG1 decision: move to LEWG targeting C++20
 
 
 ******************************************************************
