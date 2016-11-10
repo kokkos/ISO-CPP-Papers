@@ -1,5 +1,5 @@
 ===================================================================
-P0020r3 : Floating Point Atomic
+P0020r4 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
