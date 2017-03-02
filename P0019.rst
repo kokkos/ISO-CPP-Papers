@@ -542,12 +542,12 @@ In the following operation definitions:
   not in the range of representable values for its type (5p4)
   the result is unspecified, but the operations
   otherwise have no undefined behavior.
-  [Note:  Atomic arithmetic operations on *floating-point*
+  Atomic arithmetic operations on *floating-point*
   should conform to **std::numeric_limits<** *floating-point* **>**
   traits associated with the floating-point type (18.3.2).
   The floating-point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
-  floating-point environment.  - end note]
+  floating-point environment.
   For address types, the result may be an undefined address, but the operations
   otherwise have no undefined behavior.
 
