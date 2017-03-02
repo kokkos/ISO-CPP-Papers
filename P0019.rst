@@ -1,10 +1,10 @@
 ===================================================================
-P0019r4 : Atomic View
+D0019r5 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r4
-:Date: 2016-11-09
+:Number: D0019r5
+:Date: 2017-03-01
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -16,7 +16,6 @@ P0019r4 : Atomic View
 :Contact: reus1@llnl.gov
 :Audience: Library Evolution
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
-
 
 ******************************************************************
 Revision History
@@ -42,6 +41,24 @@ P0019r4
 
   - 2016-11-09 Issaquah SG1 decision: move to LEWG targeting Concurrency TS V2
 
+------------------------------------------------------------------------
+D0019r5
+------------------------------------------------------------------------
+
+  - 2017-03-01 Kona LEWG review
+
+    - Merge in P0440 Floating Point Atomic View because LEWG
+      consensus to move P0020 Floating Point Atomic to C++20 IS
+
+    - Rename from **atomic_view** and **atomic_array_view**
+      to **atomic_ref<T>** and **atomic_ref<T[]>**,
+      other name suggested **atomic_wrapper**.
+
+    - Remove **constexpr** qualification from default constructor
+      because this qualification constrains implementations and
+      does not add apparent value.
+
+  - Remove move copy constructor and move assignment operator.
 
 ******************************************************************
 Overview / Motivation / Discussion
@@ -51,18 +68,11 @@ This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
 As required by [atomics.types.generic] 20.5p1 the wrapped type **T**
 must be trivially copiable.
+This paper includes *atomic floating point* extensions in P0020r5.
 
 -----------------------------------------------------
 Naming
 -----------------------------------------------------
-
-Feedback from Library Evolution Working Group (LEWG) on P0009r0,
-Polymorphic Multidimensional Array View, noted that the term *view* 
-has the connotation of read-only. In response the P0009r0 *array_view*
-name has been revised to **array_ref** in P0009r1.
-The proposed names **atomic_view** and **atomic_array_view** may have
-the same feedback from LEWG, potentially resulting in a similar
-naming revision.
 
 The current **29.2 Header <atomic> synopsis** contains the following.
 
@@ -77,45 +87,34 @@ The current proposal introduces the following additional types.
   |  namespace std {
   |  namespace experimental {
   |
-  |    template< class T > struct atomic_view;
-  |    template<> struct atomic_view< *integral* >;
-  |    template< class T > struct atomic_view<T\*>;
-  |    template< class T > struct atomic_array_view;
+  |    template< class T > struct atomic_ref;
+  |    template<> struct atomic_ref< *integral* >;
+  |    template<> struct atomic_ref< *floating-point* >;
+  |    template< class T > struct atomic_ref<T\*>;
+  |    template< class T > struct atomic_ref<T[]>;;
   |
   |  }}
 
-An alternative naming convention is to follow the
-**atomic<T\*>** partial specialization strategy
-for naming.
-
-  |  namespace std {
-  |  namespace experimental {
-  |
-  |    template< class T > struct atomic< T & > ;
-  |    template<> struct atomic< *integral* & >;
-  |    template< class T > struct atomic< T \* & >;
-  |    template< class T > struct atomic< T [] >;
-  |
-  |  }}
+Another possible name suggested by LEWG is **atomic_wrapper**. 
 
 -----------------------------------------------------
 Atomic Operations on a Single Non-atomic Object
 -----------------------------------------------------
 
-An *atomic view* is used to perform
+An *atomic reference* is used to perform
 atomic operations on referenced non-atomic object.
-The intent is for *atomic view* to provide the best-performing
+The intent is for *atomic reference* to provide the best-performing
 implementation of atomic operations for the non-atomic object type.
-All atomic operations performed through an *atomic view*
+All atomic operations performed through an *atomic reference*
 on a referenced non-atomic object
-are atomic with respect to any other *atomic view* that references
+are atomic with respect to any other *atomic reference* that references
 the same object, as defined by equality of pointers to that object. 
 The intent is for atomic operations
 to directly update the referenced object.
-The *atomic view wrapping constructor* may acquire a resource,
+The *atomic reference wrapping constructor* may acquire a resource,
 such as a lock from a collection of address-sharded locks,
 to perform atomic operations.
-Such *atomic view* objects are not lock-free and not address-free.
+Such *atomic reference* objects are not lock-free and not address-free.
 When such a resource is necessary subsequent
 copy and move constructors and assignment operators
 may reduce overhead by copying or moving the previously
@@ -146,9 +145,9 @@ Parallel algorithms with read-only access require best-performing
 streaming read access, random read access, vectorization,
 or other guaranteed non-conflicting HPC pattern.
 
-An *atomic array view* is used to perform
+An *atomic array reference* is used to perform
 atomic operations on the non-atomic members of the referenced array.
-The intent is for *atomic array view* to provide the
+The intent is for *atomic array reference* to provide the
 best-performing implementation of atomic operations
 for the members of the array.  
 
@@ -156,7 +155,7 @@ for the members of the array.
 Wrapping Constructor Error Response
 ---------------------------------------------------------------
 
-The *wrapping constructor* of an atomic view is responsible
+The *wrapping constructor* of an atomic reference is responsible
 for detecting potential errors associated with wrapping
 a non-atomic object.
 For example, if the object does satisfy alignment requirements or
@@ -177,10 +176,11 @@ Proposal
   |  namespace std {
   |  namespace experimental {
   |
-  |    template< class T > struct atomic_view ;
-  |    template<> struct atomic_view< *integral* >;
-  |    template< class T > struct atomic_view< T \* >;
-  |    template< class T > struct atomic_array_view ;
+  |    template< class T > struct atomic_ref ;
+  |    template<> struct atomic_ref< *integral* >;
+  |    template<> struct atomic_ref< *floating-point* >;
+  |    template< class T > struct atomic_ref< T \* >;
+  |    template< class T > struct atomic_ref< T[] >;
   |
   |  }}
 
@@ -188,7 +188,7 @@ Proposal
 *add to* 29.5 Atomic Types
 -------------------------------------------
 
-  |  template< class T > struct atomic_view {
+  |  template< class T > struct atomic_ref {
   |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    bool is_lock_free() const noexcept;
@@ -201,19 +201,17 @@ Proposal
   |    bool compare_exchange_weak( T& , T , memory_order = memory_order_seq_cst ) const noexcept;
   |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
   |
-  |    ~atomic_view();
-  |    constexpr atomic_view() noexcept ;
-  |    atomic_view( atomic_view && ) noexcept ;
-  |    atomic_view( const atomic_view & ) noexcept ;
-  |    atomic_view & operator = ( atomic_view && ) noexcept ;
-  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    ~atomic_ref();
+  |    atomic_ref() noexcept ;
+  |    atomic_ref( const atomic_ref & ) noexcept ;
+  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
   |    T operator=(T) const noexcept ;
   |    
-  |    explicit atomic_view( T & obj ); // *wrapping* constructor
+  |    explicit atomic_ref( T & obj ); // *wrapping* constructor
   |    explicit constexpr operator bool () const noexcept; // *wraps*
   |  };
   |
-  |  template<> struct atomic_view< *integral* > {
+  |  template<> struct atomic_ref< *integral* > {
   |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    bool is_lock_free() const noexcept;
@@ -232,15 +230,13 @@ Proposal
   |    *integral* fetch_or(  *integral* , memory_order = memory_order_seq_cst) const noexcept;
   |    *integral* fetch_xor( *integral* , memory_order = memory_order_seq_cst) const noexcept;
   |
-  |    ~atomic_view();
-  |    constexpr atomic_view() noexcept ;
-  |    atomic_view( atomic_view && ) noexcept ;
-  |    atomic_view( const atomic_view & ) noexcept ;
-  |    atomic_view & operator = ( atomic_view && ) noexcept ;
-  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    ~atomic_ref();
+  |    atomic_ref() noexcept ;
+  |    atomic_ref( const atomic_ref & ) noexcept ;
+  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
   |    *integral* operator=( *integral* ) const noexcept ;
   |    
-  |    explicit atomic_view(  *integral*  & obj ); // *wrapping* constructor
+  |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
   |    explicit constexpr operator bool () const noexcept; // *wraps*
   |
   |    *integral* operator++(int) const noexcept;
@@ -254,7 +250,35 @@ Proposal
   |    *integral* operator^=( *integral* ) const noexcept;
   |  };
   |
-  |  template<class T> struct atomic_view< T * > {
+  |  template<> struct atomic_view< *floating-point* > {
+  |    static constexpr size_t required_alignment = *implementation-defined* ;
+  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |    bool is_lock_free() const noexcept;
+  |    void store( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    *floating-point* load( memory_order = memory_order_seq_cst ) const noexcept;
+  |    operator *floating-point* () const noexcept ;
+  |    *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |
+  |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
+  |
+  |    atomic_view() noexcept ;
+  |    atomic_view( const atomic_view & ) noexcept ;
+  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    *floating-point* operator=( *floating-point* ) noexcept ;
+  |
+  |    explicit atomic_view( *floating-point* & obj ) noexcept ;
+  |    explicit constexpr operator bool () const noexcept;
+  |
+  |    *floating-point* operator+=( *floating-point* ) const ;
+  |    *floating-point* operator-=( *floating-point* ) const ;
+  |  };
+  |
+  |  template<class T> struct atomic_ref< T * > {
   |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    bool is_lock_free() const noexcept;
@@ -270,15 +294,13 @@ Proposal
   |    T * fetch_add( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;
   |    T * fetch_sub( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;
   |
-  |    ~atomic_view();
-  |    constexpr atomic_view() noexcept ;
-  |    atomic_view( atomic_view && ) noexcept ;
-  |    atomic_view( const atomic_view & ) noexcept ;
-  |    atomic_view & operator = ( atomic_view && ) noexcept ;
-  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    ~atomic_ref();
+  |    atomic_ref() noexcept ;
+  |    atomic_ref( const atomic_ref & ) noexcept ;
+  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
   |    T * operator=( T * ) const noexcept ;
   |    
-  |    explicit atomic_view( T * & obj ); // *wrapping* constructor
+  |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
   |    explicit constexpr operator bool () const noexcept; // *wraps*
   |
   |    T * operator++(int) const noexcept;
@@ -289,7 +311,7 @@ Proposal
   |    T * operator-=( ptrdiff_t ) const noexcept;
   |  };
   |
-  |  template< class T > struct atomic_array_view {
+  |  template< class T > struct atomic_ref< T[] > {
   |
   |    static constexpr size_t required_alignment = *implementation defined* ;
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
@@ -297,35 +319,33 @@ Proposal
   |
   |    explicit constexpr operator bool() const noexcept ;
   |
-  |    atomic_array_view( T * , size_t ); // wrapping constructor
+  |    atomic_array_ref( T * , size_t ); // wrapping constructor
   |
-  |    constexpr atomic_array_view() noexcept ;
-  |    atomic_array_view( atomic_array_view && ) noexcept ;
-  |    atomic_array_view( const atomic_array_view & ) noexcept ;
-  |    atomic_array_view & operator = ( atomic_array_view && ) noexcept ;
-  |    atomic_array_view & operator = ( const atomic_array_view & ) noexcept ;
-  |    ~atomic_array_view();
+  |    atomic_ref() noexcept ;
+  |    atomic_ref( const atomic_ref & ) noexcept ;
+  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
+  |    ~atomic_ref();
   |
   |    size_t size() const noexcept ;
   |
-  |    atomic_view<T> operator[]( size_t ) const noexcept;
+  |    atomic_ref<T> operator[]( size_t ) const noexcept;
   |  };
 
-1  There are generic class templates atomic<T>, atomic_view<T>, and atomic_array_view<T>.
+1  There are generic class templates atomic<T> and atomic_ref<T>.
 
 -------------------------------------------------------------------------
-*add* 29.6.6 Requirements for operations on atomic view types
+*add* 29.6.6 Requirements for operations on atomic reference types
 -------------------------------------------------------------------------
 
 In the following operation definitions:
 
-  - an *A* refers to one of the atomic view types.
+  - an *A* refers to one of the atomic reference types.
 
   - a *C* refers to its corresponding non-atomic type
 
   - an *M* refers to type of other argument for arithmetic operations.
-    For integral atomic view types, *M* is *C*.
-    For atomic view address types, *M* is **std::ptrdiff_t**.
+    For integral atomic reference types, *M* is *C*.
+    For atomic reference address types, *M* is **std::ptrdiff_t**.
 
 
 **static constexpr bool A::is_always_lock_free =** *implementation-defined* **;**
@@ -340,42 +360,42 @@ In the following operation definitions:
 
 **static constexpr size_t required_alignment =** *implementation-defined* **;**
 
-  The required alignment of an object to be referenced by an atomic view,
+  The required alignment of an object to be referenced by an atomic reference,
   which is at least ``align_of(C)``.
   [Note: An architecture may support lock-free atomic operations
   on objects of type *C* only if those objects meet a required
-  alignment.  The intent is for *atomic_view* to provide lock-free
+  alignment.  The intent is for *atomic_ref* to provide lock-free
   atomic operations whenever possible. 
   For example, an architecture may be able to support lock-free
   operations on **std::complex<double>** only if aligned to 16 bytes
   and not 8 bytes. - end note]
 
 
-**constexpr A::A() noexcept;**
+**A::A() noexcept;**
 
   Effects: **\*this** does not reference an object.
 
 
 **A::A( C & object );**
 
-  This *wrapping constructor* constructs an *atomic view*
+  This *wrapping constructor* constructs an *atomic reference*
   that references the non-atomic *object*.
   Atomic operations applied to *object* through a referencing
-  *atomic view* are atomic with respect to atomic operations
-  applied through any other *atomic view* that references that *object*.
+  *atomic reference* are atomic with respect to atomic operations
+  applied through any other *atomic reference* that references that *object*.
 
   Requires: The referenced non-atomic *object* shall be
   aligned to **required_alignment**.
   The lifetime (3.8) of **\*this**
   shall not exceed the lifetime of the referenced non-atomic object.
-  While any **atomic_view** instance exists that references *object*
+  While any **atomic_ref** instance exists that references *object*
   all accesses of that *object* shall exclusively occur through those
-  **atomic_view** instances.
+  **atomic_ref** instances.
   If the referenced *object* is of a class or aggregate type
   then members of that object shall not be concurrently
-  wrapped by an **atomic_view** object.
+  wrapped by an **atomic_ref** object.
   The referenced *object* shall not be a member of an array that
-  is wrapped by an **atomic_array_view** .
+  is wrapped by an **atomic_ref<T[]>** .
   [Note: Other implementation dependent conditions may exist.
   For example, successful acquisition of a lock associated with
   the referenced *object* ,
@@ -388,18 +408,6 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
 
-
-| **A::A( A && rhs ) noexcept ;**
-| **A & A::operator = ( A && rhs ) noexcept ;**
-
-  Effects: If *rhs* references an object
-  then **\*this** references that object
-  **rhs** no longer references an object,
-  otherwise **\*this** does not reference an object.
-  If *rhs* also references an acquired shared resource
-  then **\*this** references that shared resource and
-  **rhs** no longer references that shared resource,
-  otherwise **\*this** does not reference a shared resource.
 
 | **A::A( A const & rhs ) noexcept ;**
 | **A & A::operator = ( A const & rhs ) noexcept ;**
@@ -516,11 +524,20 @@ In the following operation definitions:
   Returns: Atomically, the value referenced by **\*this**
   immediately before the effects.
 
-  Remark: For signed integer types, arithmetic is defined to
-  use two’s complement representation.
-  There are no undefined results.
-  For address types, the result may be an undefined address,
-  but the operations otherwise have no undefined behavior.
+  *Remark:* For signed integer types, arithmetic is defined to use
+  two’s complement representation and there are no undefined results.
+  For floating-point types, if the result is not mathematically defined or
+  not in the range of representable values for its type (5p4)
+  the result is unspecified, but the operations
+  otherwise have no undefined behavior.
+  [Note:  Atomic arithmetic operations on *floating-point*
+  should conform to **std::numeric_limits<** *floating-point* **>**
+  traits associated with the floating-point type (18.3.2).
+  The floating-point environment (26.4) for atomic arithmetic operations
+  on *floating-point* may be different than the calling thread's
+  floating-point environment.  - end note]
+  For address types, the result may be an undefined address, but the operations
+  otherwise have no undefined behavior.
 
 
 **A::operator** *op* **=(M operand) const noexcept;**
@@ -551,12 +568,12 @@ In the following operation definitions:
 
 
 -------------------------------------------------------------------------
-*add* 29.6.7 Requirements for operations on atomic array view types
+*add* 29.6.7 Requirements for operations on atomic array reference types
 -------------------------------------------------------------------------
 
 In the following operation definitions:
 
-  - an *A* refers to one of the atomic array view types.
+  - an *A* refers to one of the atomic array reference types.
 
   - a *C* refers to its corresponding non-atomic type
 
@@ -573,26 +590,26 @@ In the following operation definitions:
 
 **static constexpr size_t required_alignment =** *implementation-defined* **;**
 
-  The required alignment of an array to be referenced by an atomic view,
+  The required alignment of an array to be referenced by an atomic reference,
   which is at least ``align_of(C)``.
 
   Remark: An architecture may support lock-free atomic operations
   on objects of type *C* only if those objects meet a required
-  alignment.  The intent is for *atomic_array_view* to provide lock-free
+  alignment.  The intent is for *atomic_ref<T[]>* to provide lock-free
   atomic operations whenever possible. 
   [Note: For example, an architecture may be able to support lock-free
   operations on **std::complex<double>** only if aligned to 16 bytes
   and not 8 bytes. - end note]
 
 
-**constexpr A::A() noexcept;**
+**A::A() noexcept;**
 
   Effects: **\*this** does not reference an array and
   therefore **operator bool() == false**.
 
 **A::A( C * array , size_t length );**
 
-  This *wrapping constructor* constructs an *atomic_array_view*
+  This *wrapping constructor* constructs an *atomic_ref<T[]>*
   that references an array of non-atomic elements
   spanning ``[array..array+length)``.
 
@@ -600,13 +617,13 @@ In the following operation definitions:
   aligned to **required_alignment**.
   The lifetime (3.8) of **\*this**
   shall not exceed the lifetime of the referenced non-atomic array.
-  All **atomic_array_view** instances that reference any element of
+  All **atomic_ref<T[]>** instances that reference any element of
   the array shall reference the same span of the array.
-  As long as any **atomic_array_view** instance exists that references
+  As long as any **atomic_ref<T[]>** instance exists that references
   array all accesses to members of that array shall exclusively occur
-  through those **atomic_array_view** instances.
+  through those **atomic_ref<T[]>** instances.
   No element of array is concurrently *wrap constructed* by an
-  **atomic_view**.
+  **atomic_ref<T>**.
   [Note: Other implementation dependent conditions may exist.
   For example, successful acquisition of a locks associated with
   the referenced *array* ,
@@ -616,24 +633,12 @@ In the following operation definitions:
   Effects: **\*this** references the non-atomic array.
   Atomic operations on members of array are atomic with respect
   to atomic operations on members referenced through any other
-  **atomic_array_view** instance.
+  **atomic_ref<T[]>** instance.
   [Note: The *wrapping constructor* may acquire shared resources,
   such as a locks associated with the referenced array,
   to enable atomic operations applied to the referenced
   non-atomic members of referenced array. - end note]
 
-
-| **A::A( A && rhs ) noexcept ;**
-| **A & A::operator = ( A && rhs ) noexcept ;**
-
-  Effects: If *rhs* references an array
-  then **\*this** references that array and
-  **rhs** no longer references an array,
-  otherwise **\*this** does not reference an array.
-  If *rhs* also references acquired shared resources
-  then **\*this** references those shared resources and
-  **rhs** no longer references those shared resources,
-  otherwise **\*this** does not reference shared resources.
 
 | **A::A( A const & rhs ) noexcept ;**
 | **A & A::operator = ( A const & rhs ) noexcept ;**
@@ -659,8 +664,8 @@ In the following operation definitions:
 **atomic_view<C> A::operator[]( size_t i ) const noexcept ;**
 
   Requires: **i < size()** and the lifetime of the returned
-  **atomic_view**\ s shall not exceed the lifetime of the
-  associated **atomic_array_view**.
+  **atomic_ref**\ shall not exceed the lifetime of the
+  associated **atomic_ref<T[]>**.
   [Note: Analogous to the lifetime of an iterator with respect to the
   lifetime of the associated container. - end note]
 
@@ -668,8 +673,8 @@ In the following operation definitions:
 
 .. code-block:: c++
 
-  // atomic array view wrapper constructor:
-  atomic_array_view<T> array( ptr , N );
+  // atomic reference wrapper constructor:
+  atomic_ref<T[]> array( ptr , N );
 
   // atomic operation on a member:
   array[i].atomic-operation(...);
@@ -681,5 +686,4 @@ In the following operation definitions:
   x.atomic-operation-b(...);
 
 ..
-
 

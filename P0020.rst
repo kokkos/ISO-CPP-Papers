@@ -1,10 +1,10 @@
 ===================================================================
-P0020r4 : Floating Point Atomic
+D0020r5 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: P0020r4
-:Date: 2016-11-09
+:Date: 2017-03-01
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -36,6 +36,20 @@ P0020r4
   - Editorial, add hyphenation to "floating point"
 
   - 2016-11-09 Issaquah SG1 decision: move to LEWG targeting C++20
+
+------------------------------------------------------------
+D0020r5
+------------------------------------------------------------
+
+  - 2017-03-01 Kona LEWG review and consensus: move to C++20 IS
+
+  - Change remarks regarding floating point environment from
+    note to normative.
+
+  - Query vendors regarding changing "should" to "shall" in
+    regard to floating point environment.  Response from two
+    vendors supporting atomic floating point add operations
+    in hardware was "do not change."
 
 
 ******************************************************************
@@ -112,7 +126,7 @@ Proposal
   |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
   |
   |    atomic() noexcept = default ;
-  |    constexpr atomic( *floating-point* ) noexcept ;
+  |    atomic( *floating-point* ) noexcept ;
   |    atomic( const atomic & ) = delete ;
   |    atomic & operator = ( const atomic & ) = delete ;
   |    atomic & operator = ( const atomic & ) volatile = delete ;
@@ -150,12 +164,12 @@ the name *floating-point* refers to a floating-point type and the name
   not in the range of representable values for its type (5p4)
   the result is unspecified, but the operations
   otherwise have no undefined behavior.
-  [Note:  Atomic arithmetic operations on *floating-point*
+  Atomic arithmetic operations on *floating-point*
   should conform to **std::numeric_limits<** *floating-point* **>**
   traits associated with the floating-point type (18.3.2).
   The floating-point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
-  floating-point environment.  - end note]
+  floating-point environment.
   For address types, the result may be an undefined address,
   but the operations otherwise have no undefined behavior.
 
