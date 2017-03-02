@@ -95,7 +95,19 @@ The current proposal introduces the following additional types.
   |
   |  }}
 
-Another possible name suggested by LEWG is **atomic_wrapper**. 
+Other possible naming
+
+  - atomic_wrapper< T >,
+    atomic_wrapper< *integral* >,
+    atomic_wrapper< *floating-point* >,
+    atomic_wrapper< T * >,
+    atomic_wrapper< T[] >
+
+  - atomic< T & >,
+    atomic< *integral* & >,
+    atomic< *floating-point* & >,
+    atomic< T * & >,
+    atomic< T[] >
 
 -----------------------------------------------------
 Atomic Operations on a Single Non-atomic Object
@@ -208,7 +220,7 @@ Proposal
   |    T operator=(T) const noexcept ;
   |    
   |    explicit atomic_ref( T & obj ); // *wrapping* constructor
-  |    explicit constexpr operator bool () const noexcept; // *wraps*
+  |    explicit operator bool () const noexcept; // *wraps*
   |  };
   |
   |  template<> struct atomic_ref< *integral* > {
@@ -237,7 +249,7 @@ Proposal
   |    *integral* operator=( *integral* ) const noexcept ;
   |    
   |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
-  |    explicit constexpr operator bool () const noexcept; // *wraps*
+  |    explicit operator bool () const noexcept; // *wraps*
   |
   |    *integral* operator++(int) const noexcept;
   |    *integral* operator--(int) const noexcept;
@@ -250,7 +262,7 @@ Proposal
   |    *integral* operator^=( *integral* ) const noexcept;
   |  };
   |
-  |  template<> struct atomic_view< *floating-point* > {
+  |  template<> struct atomic_ref< *floating-point* > {
   |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    bool is_lock_free() const noexcept;
@@ -266,13 +278,13 @@ Proposal
   |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
   |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
   |
-  |    atomic_view() noexcept ;
-  |    atomic_view( const atomic_view & ) noexcept ;
-  |    atomic_view & operator = ( const atomic_view & ) noexcept ;
+  |    atomic_ref() noexcept ;
+  |    atomic_ref( const atomic_ref & ) noexcept ;
+  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
   |    *floating-point* operator=( *floating-point* ) noexcept ;
   |
-  |    explicit atomic_view( *floating-point* & obj ) noexcept ;
-  |    explicit constexpr operator bool () const noexcept;
+  |    explicit atomic_ref( *floating-point* & obj ) noexcept ;
+  |    explicit operator bool () const noexcept;
   |
   |    *floating-point* operator+=( *floating-point* ) const ;
   |    *floating-point* operator-=( *floating-point* ) const ;
@@ -301,7 +313,7 @@ Proposal
   |    T * operator=( T * ) const noexcept ;
   |    
   |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
-  |    explicit constexpr operator bool () const noexcept; // *wraps*
+  |    explicit operator bool () const noexcept; // *wraps*
   |
   |    T * operator++(int) const noexcept;
   |    T * operator--(int) const noexcept;
@@ -317,7 +329,7 @@ Proposal
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
   |    bool is_lock_free() const noexcept ;
   |
-  |    explicit constexpr operator bool() const noexcept ;
+  |    explicit operator bool() const noexcept ;
   |
   |    atomic_array_ref( T * , size_t ); // wrapping constructor
   |
@@ -424,7 +436,7 @@ In the following operation definitions:
   Effects: [Note: If **\*this** references an acquired shared resource
   then **\*this** releases that shared resource. - end note]
 
-**explicit constexpr A::operator bool () const noexept ;**
+**explicit A::operator bool () const noexept ;**
 
   Returns: **true** if **\*this** references a non-atomic object,
   otherwise **false**.
@@ -655,13 +667,13 @@ In the following operation definitions:
   Effects: [Note: If **\*this** references acquired shared resources
   then **\*this** releases those shared resources. - end note]
 
-**explicit constexpr A::operator bool () const noexept ;**
+**explicit A::operator bool () const noexept ;**
 
   Returns: **true** if **\*this** references a non-atomic array,
   otherwise **false**.
 
 
-**atomic_view<C> A::operator[]( size_t i ) const noexcept ;**
+**atomic_ref<C> A::operator[]( size_t i ) const noexcept ;**
 
   Requires: **i < size()** and the lifetime of the returned
   **atomic_ref**\ shall not exceed the lifetime of the
