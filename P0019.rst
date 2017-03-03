@@ -4,7 +4,7 @@ D0019r5 : Atomic View
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: D0019r5
-:Date: 2017-03-01
+:Date: 2017-03-03
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -58,7 +58,9 @@ D0019r5
       because this qualification constrains implementations and
       does not add apparent value.
 
-  - Remove move copy constructor and move assignment operator.
+  - Remove copy constructor and assignment operators.
+
+  - Feature next macro
 
 ******************************************************************
 Overview / Motivation / Discussion
@@ -68,7 +70,61 @@ This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
 As required by [atomics.types.generic] 20.5p1 the wrapped type **T**
 must be trivially copiable.
-This paper includes *atomic floating point* extensions in P0020r5.
+This paper includes *atomic floating point* capability defined in P0020r5.
+
+---------------------------------------------------------------
+Motivation: Atomic Operations on a Single Non-atomic Object
+---------------------------------------------------------------
+
+An *atomic reference* is used to perform
+atomic operations on referenced non-atomic object.
+The intent is for *atomic reference* to provide the best-performing
+implementation of atomic operations for the non-atomic object type.
+All atomic operations performed through an *atomic reference*
+on a referenced non-atomic object
+are atomic with respect to any other *atomic reference* that references
+the same object, as defined by equality of pointers to that object. 
+The intent is for atomic operations
+to directly update the referenced object.
+The *atomic reference wrapping constructor* may acquire a resource,
+such as a lock from a collection of address-sharded locks,
+to perform atomic operations.
+Such *atomic reference* objects are not lock-free and not address-free.
+When such a resource is necessary subsequent
+copy and move constructors and assignment operators
+may reduce overhead by copying or moving the previously
+acquired resource as opposed to re-acquiring that resource.
+
+Introducing concurrency within legacy codes may require
+replacing operations on existing non-atomic objects with atomic operations
+such that the non-atomic object cannot be replaced with a **atomic** object.
+
+An object may be heavily used non-atomically in well-defined phases
+of an application.  Forcing such objects to be exclusively **atomic**
+would incur an unnecessary performance penalty.
+
+---------------------------------------------------------------
+Motivation: Atomic Operations on Members of a Very Large Array
+---------------------------------------------------------------
+
+High performance computing (HPC) applications use very large arrays.
+Computations with these arrays typically have distinct phases that
+allocate and initialize members of the array,
+update members of the array,
+and read members of the array.
+Parallel algorithms for initialization (e.g., zero fill)
+have non-conflicting access when assigning member values.
+Parallel algorithms for updates have conflicting access
+to members which must be guarded by atomic operations.
+Parallel algorithms with read-only access require best-performing
+streaming read access, random read access, vectorization,
+or other guaranteed non-conflicting HPC pattern.
+
+An *atomic array reference* is used to perform
+atomic operations on the non-atomic members of the referenced array.
+The intent is for *atomic array reference* to provide the
+best-performing implementation of atomic operations
+for the members of the array.  
 
 -----------------------------------------------------
 Naming
@@ -109,77 +165,30 @@ Other possible naming
     atomic< T * & >,
     atomic< T[] >
 
------------------------------------------------------
-Atomic Operations on a Single Non-atomic Object
------------------------------------------------------
-
-An *atomic reference* is used to perform
-atomic operations on referenced non-atomic object.
-The intent is for *atomic reference* to provide the best-performing
-implementation of atomic operations for the non-atomic object type.
-All atomic operations performed through an *atomic reference*
-on a referenced non-atomic object
-are atomic with respect to any other *atomic reference* that references
-the same object, as defined by equality of pointers to that object. 
-The intent is for atomic operations
-to directly update the referenced object.
-The *atomic reference wrapping constructor* may acquire a resource,
-such as a lock from a collection of address-sharded locks,
-to perform atomic operations.
-Such *atomic reference* objects are not lock-free and not address-free.
-When such a resource is necessary subsequent
-copy and move constructors and assignment operators
-may reduce overhead by copying or moving the previously
-acquired resource as opposed to re-acquiring that resource.
-
-Introducing concurrency within legacy codes may require
-replacing operations on existing non-atomic objects with atomic operations
-such that the non-atomic object cannot be replaced with a **atomic** object.
-
-An object may be heavily used non-atomically in well-defined phases
-of an application.  Forcing such objects to be exclusively **atomic**
-would incur an unnecessary performance penalty.
-
 ---------------------------------------------------------------
-Atomic Operations on Members of a Very Large Array
+*Wrappability* Constraints
 ---------------------------------------------------------------
 
-High performance computing (HPC) applications use very large arrays.
-Computations with these arrays typically have distinct phases that
-allocate and initialize members of the array,
-update members of the array,
-and read members of the array.
-Parallel algorithms for initialization (e.g., zero fill)
-have non-conflicting access when assigning member values.
-Parallel algorithms for updates have conflicting access
-to members which must be guarded by atomic operations.
-Parallel algorithms with read-only access require best-performing
-streaming read access, random read access, vectorization,
-or other guaranteed non-conflicting HPC pattern.
-
-An *atomic array reference* is used to perform
-atomic operations on the non-atomic members of the referenced array.
-The intent is for *atomic array reference* to provide the
-best-performing implementation of atomic operations
-for the members of the array.  
-
----------------------------------------------------------------
-Wrapping Constructor Error Response
----------------------------------------------------------------
-
-The *wrapping constructor* of an atomic reference is responsible
-for detecting potential errors associated with wrapping
-a non-atomic object.
-For example, if the object does satisfy alignment requirements or
-resides in memory where atomic operations are not supported
-(e.g, GPU registers).
-The wrapping constructor's response to such errors is
-to throw an exception, an alternative response is to abort.
+The *wrapping constructor* of an atomic reference requires
+that the object be *wrappable* for atomic operations;
+for example that the object is properly aligned in memory
+or resides in GPU register memory.
+This revision of P0019 does not enumerate all potential
+*wrappability* constraints or specify behavior of the
+wrapping constructor when these constraints are violated.
+It is quality-of-implementation to generate appropriate
+error information.
 
 
 ******************************************************************
 Proposal
 ******************************************************************
+
+-------------------------------------------
+*add* feature test macro
+-------------------------------------------
+
+  | __cpp_lib_atomic_ref
 
 -------------------------------------------
 *add to* 29.2 Header <atomic> synopsis
@@ -214,13 +223,14 @@ Proposal
   |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
   |
   |    ~atomic_ref();
-  |    atomic_ref() noexcept ;
-  |    atomic_ref( const atomic_ref & ) noexcept ;
-  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
-  |    T operator=(T) const noexcept ;
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
   |    explicit atomic_ref( T & obj ); // *wrapping* constructor
   |    explicit operator bool () const noexcept; // *wraps*
+  |
+  |    T operator=(T) const noexcept ;
   |  };
   |
   |  template<> struct atomic_ref< *integral* > {
@@ -243,14 +253,14 @@ Proposal
   |    *integral* fetch_xor( *integral* , memory_order = memory_order_seq_cst) const noexcept;
   |
   |    ~atomic_ref();
-  |    atomic_ref() noexcept ;
-  |    atomic_ref( const atomic_ref & ) noexcept ;
-  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
-  |    *integral* operator=( *integral* ) const noexcept ;
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
   |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
   |    explicit operator bool () const noexcept; // *wraps*
   |
+  |    *integral* operator=( *integral* ) const noexcept ;
   |    *integral* operator++(int) const noexcept;
   |    *integral* operator--(int) const noexcept;
   |    *integral* operator++() const noexcept;
@@ -278,16 +288,17 @@ Proposal
   |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
   |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
   |
-  |    atomic_ref() noexcept ;
-  |    atomic_ref( const atomic_ref & ) noexcept ;
-  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
-  |    *floating-point* operator=( *floating-point* ) noexcept ;
+  |    ~atomic_ref();
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |
   |    explicit atomic_ref( *floating-point* & obj ) noexcept ;
   |    explicit operator bool () const noexcept;
   |
-  |    *floating-point* operator+=( *floating-point* ) const ;
-  |    *floating-point* operator-=( *floating-point* ) const ;
+  |    *floating-point* operator=( *floating-point* ) noexcept ;
+  |    *floating-point* operator+=( *floating-point* ) const noexcept ;
+  |    *floating-point* operator-=( *floating-point* ) const noexcept ;
   |  };
   |
   |  template<class T> struct atomic_ref< T * > {
@@ -307,14 +318,14 @@ Proposal
   |    T * fetch_sub( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;
   |
   |    ~atomic_ref();
-  |    atomic_ref() noexcept ;
-  |    atomic_ref( const atomic_ref & ) noexcept ;
-  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
-  |    T * operator=( T * ) const noexcept ;
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
   |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
   |    explicit operator bool () const noexcept; // *wraps*
   |
+  |    T * operator=( T * ) const noexcept ;
   |    T * operator++(int) const noexcept;
   |    T * operator--(int) const noexcept;
   |    T * operator++() const noexcept;
@@ -329,14 +340,13 @@ Proposal
   |    static constexpr bool is_always_lock_free = *implementation defined* ;
   |    bool is_lock_free() const noexcept ;
   |
-  |    explicit operator bool() const noexcept ;
+  |    ~atomic_ref();
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |
   |    atomic_array_ref( T * , size_t ); // wrapping constructor
-  |
-  |    atomic_ref() noexcept ;
-  |    atomic_ref( const atomic_ref & ) noexcept ;
-  |    atomic_ref & operator = ( const atomic_ref & ) noexcept ;
-  |    ~atomic_ref();
+  |    explicit operator bool() const noexcept ;
   |
   |    size_t size() const noexcept ;
   |
@@ -408,28 +418,13 @@ In the following operation definitions:
   wrapped by an **atomic_ref** object.
   The referenced *object* shall not be a member of an array that
   is wrapped by an **atomic_ref<T[]>** .
-  [Note: Other implementation dependent conditions may exist.
-  For example, successful acquisition of a lock associated with
-  the referenced *object* ,
-  or the referenced object cannot have automatic storage duration
-  within a GPGPU execution context. - end note]
+  [Note: Other implementation dependent conditions may exist. - end note]
 
   Effects: **\*this** references the non-atomic *object*.
   [Note: The *wrapping constructor* may acquire a shared resource,
   such as a lock associated with the referenced object,
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
-
-
-| **A::A( A const & rhs ) noexcept ;**
-| **A & A::operator = ( A const & rhs ) noexcept ;**
-
-  Effects: If *rhs* references an object
-  then **\*this** references the same object,
-  otherwise **\*this** does not reference an object.
-  If *rhs* also references a shared resource
-  then **\*this** references that shared resource,
-  otherwise **\*this** does not reference a shared resource.
 
 **A::~A() noexcept ;**
 
@@ -636,11 +631,7 @@ In the following operation definitions:
   through those **atomic_ref<T[]>** instances.
   No element of array is concurrently *wrap constructed* by an
   **atomic_ref<T>**.
-  [Note: Other implementation dependent conditions may exist.
-  For example, successful acquisition of a locks associated with
-  the referenced *array* ,
-  or the referenced array cannot have automatic storage duration
-  within a GPGPU execution context. - end note]
+  [Note: Other implementation dependent conditions may exist. - end note]
 
   Effects: **\*this** references the non-atomic array.
   Atomic operations on members of array are atomic with respect
@@ -651,16 +642,6 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic members of referenced array. - end note]
 
-
-| **A::A( A const & rhs ) noexcept ;**
-| **A & A::operator = ( A const & rhs ) noexcept ;**
-
-  Effects: If *rhs* references an array
-  then **\*this** references the same array,
-  otherwise **\*this** does not reference an array.
-  If *rhs* also references shared resources
-  then **\*this** references those shared resources,
-  otherwise **\*this** does not reference shared resources.
 
 **A::~A() noexcept ;**
 
