@@ -72,7 +72,8 @@ Proposal:
 *add to 32.7* Specializations for *floating-point*
 ---------------------------------------------------------------
 
-The are specializations of the **atomic** template for 
+There shall be explicit specializations of the **atomic**
+template for the floating-point types 
 floating-point types ``float`` and ``double``.
 For each such floating-point type *floating-point* ,
 the specialization **atomic<** *floating-point* **>** provides
@@ -128,8 +129,8 @@ Descriptions are provided below only for members that differ from the primary te
 | **T A::fetch_**\ *key*\ **(T operand, memory_order order = memory_order_seq_cst) noexcept;**
 
   *Effects:* Atomically replaces the value pointed to by ``this`` with the
-  result of the computation applied to the value pointed this and the
-  given operand. Memory is affected according to the value of order.
+  result of the computation applied to the value pointed to by ``this`` and the
+  given ``operand``. Memory is affected according to the value of ``order``.
   These operations are atomic read-modify-write operations (4.7).
 
   *Returns:* Atomically, the value pointed to by ``this`` immediately
