@@ -3,7 +3,7 @@ D0020r5 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0020r4
+:Number: P0020r5
 :Date: 2017-03-04
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
