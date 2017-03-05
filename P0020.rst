@@ -4,7 +4,7 @@ D0020r5 : Floating Point Atomic
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: P0020r4
-:Date: 2017-03-01
+:Date: 2017-03-04
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -51,6 +51,7 @@ D0020r5
     vendors supporting atomic floating point add operations
     in hardware was "do not change."
 
+  - Align with C++17 working draft atomic wording as per P0558r1
 
 ******************************************************************
 Overview / Motivation
@@ -60,44 +61,22 @@ This paper proposes an extension to the atomic operations library [atomics]
 for atomic addition on an object conforming to the atomic<T> where T is
 a *floating-point* type (N5131 3.9.1p8).
 
-This paper **does not** include proposed extension
-of the named atomic type (N5131 Tables 134 and 135),
-or by implication extension of the C \_Atomic qualification
-for floating-point types.
-
 The capability for atomic addition on floating-point types
-critical for high performance computing (HPC) applications.
-The need is for extension of *atomic* and
-*atomic_view* (P0019) for floating-point types.
-
+critical for parallel high performance computing (HPC) applications.
 
 ******************************************************************
-Proposal
+Proposal:
 ******************************************************************
 
--------------------------------------------
-*add to* 29.2 Header <atomic> synopsis
--------------------------------------------
+---------------------------------------------------------------
+*add to 32.7* Specializations for *floating-point*
+---------------------------------------------------------------
 
-  |  namespace std {
-  |    template<> stuct atomic< *floating-point* >;
-  |
-  |    // In the following declarations, *atomic-floating-point* is atomic<T>.
-  |
-  |    *floating-point* atomic_fetch_add( volatile *atomic-floating-point*\*, *floating-point* ) noexcept ;
-  |    *floating-point* atomic_fetch_add( *atomic-floating-point*\*, *floating-point* ) noexcept ;
-  |    *floating-point* atomic_fetch_add_explicit( volatile *atomic-floating-point*\*, *floating-point* , memory_order ) noexcept ;
-  |    *floating-point* atomic_fetch_add_explicit( *atomic-floating-point*\*, *floating-point* , memory_order ) noexcept ;
-  |    *floating-point* atomic_fetch_sub( volatile *atomic-floating-point*\*, *floating-point* ) noexcept ;
-  |    *floating-point* atomic_fetch_sub( *atomic-floating-point*\*, *floating-point* ) noexcept ;
-  |    *floating-point* atomic_fetch_sub_explicit( volatile *atomic-floating-point*\*, *floating-point* , memory_order ) noexcept ;
-  |    *floating-point* atomic_fetch_sub_explicit( *atomic-floating-point*\*, *floating-point* , memory_order ) noexcept ;
-  |
-  |  }
-
--------------------------------------------
-*add to* 29.5 Atomic Types
--------------------------------------------
+The are specializations of the **atomic** template for 
+floating-point types ``float`` and ``double``.
+For each such floating-point type *floating-point* ,
+the specialization **atomic<** *floating-point* **>** provides
+additional atomic operations appropriate to floating-point types.
 
   |  template<> struct atomic< *floating-point* > {
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
@@ -126,7 +105,7 @@ Proposal
   |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
   |
   |    atomic() noexcept = default ;
-  |    atomic( *floating-point* ) noexcept ;
+  |    constexpr atomic( *floating-point* ) noexcept ;
   |    atomic( const atomic & ) = delete ;
   |    atomic & operator = ( const atomic & ) = delete ;
   |    atomic & operator = ( const atomic & ) volatile = delete ;
@@ -139,27 +118,24 @@ Proposal
   |    *floating-point* operator-=( *floating-point* ) noexcept;
   |  };
 
--------------------------------------------------------------------------
-*add to* 29.6.3 Arithmetic operations on atomic types
--------------------------------------------------------------------------
+The atomic floating-point specializations shall be standard-layout structs.
+They shall each have a trivial default constructor and a trivial destructor.
+They shall each support aggregate initialization syntax.
 
-In the declarations of these functions and function template specializations,
-the name *floating-point* refers to a floating-point type and the name
-*atomic-floating-point* refers to **atomic<**\ *floating-point*\ **>**.
+Descriptions are provided below only for members that differ from the primary template.
 
--------------------------------------------------------------------------
-*in* 29.6.5 Requirements for operations on atomic types
--------------------------------------------------------------------------
+| **T A::fetch_**\ *key*\ **(T operand, memory_order order = memory_order_seq_cst) volatile noexcept;**
+| **T A::fetch_**\ *key*\ **(T operand, memory_order order = memory_order_seq_cst) noexcept;**
 
-*regarding arithmetic operations*
+  *Effects:* Atomically replaces the value pointed to by ``this`` with the
+  result of the computation applied to the value pointed this and the
+  given operand. Memory is affected according to the value of order.
+  These operations are atomic read-modify-write operations (4.7).
 
-| **C A::fetch_**\ *key*\ **(M operand, memory_order order = memory_order_seq_cst) volatile noexcept;**
-| **C A::fetch_**\ *key*\ **(M operand, memory_order order = memory_order_seq_cst) noexcept;**
+  *Returns:* Atomically, the value pointed to by ``this`` immediately
+  before the effects.
 
-*update 29.6.5p31 Remark*
-
-  *Remark:* For signed integer types, arithmetic is defined to use
-  two’s complement representation and there are no undefined results.
+  *Remark:*
   For floating-point types, if the result is not mathematically defined or
   not in the range of representable values for its type (5p4)
   the result is unspecified, but the operations
@@ -170,7 +146,5 @@ the name *floating-point* refers to a floating-point type and the name
   The floating-point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
   floating-point environment.
-  For address types, the result may be an undefined address,
-  but the operations otherwise have no undefined behavior.
 
 

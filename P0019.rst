@@ -4,7 +4,7 @@ D0019r5 : Atomic View
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: D0019r5
-:Date: 2017-03-03
+:Date: 2017-03-04
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -58,9 +58,13 @@ D0019r5
       because this qualification constrains implementations and
       does not add apparent value.
 
-  - Remove copy constructor and assignment operators.
+  - Remove default constructor, copy constructor, and assignment operator
+    for tighter alignment with **atomic<T>** and prevent empty references.
 
-  - Feature next macro
+  - Revise syntax to align with P0558r1, Resolving atomic<T>
+    base class inconsistencies
+
+  - Recommend feature next macro
 
 ******************************************************************
 Overview / Motivation / Discussion
@@ -130,38 +134,31 @@ for the members of the array.
 Naming
 -----------------------------------------------------
 
-The current **29.2 Header <atomic> synopsis** contains the following.
+The current **Header <atomic> synopsis** contains the following.
 
   |  namespace std {
   |    template< class T > struct atomic;
-  |    template<> struct atomic< *integral* >;
   |    template< class T > struct atomic<T\*>;
   |  }
 
-The current proposal introduces the following additional types.
+The proposal introduces the following type and partial specializations.
 
   |  namespace std {
   |  namespace experimental {
   |
   |    template< class T > struct atomic_ref;
-  |    template<> struct atomic_ref< *integral* >;
-  |    template<> struct atomic_ref< *floating-point* >;
   |    template< class T > struct atomic_ref<T\*>;
   |    template< class T > struct atomic_ref<T[]>;;
   |
   |  }}
 
-Other possible naming
+Other possible naming or partial specializations
 
   - atomic_wrapper< T >,
-    atomic_wrapper< *integral* >,
-    atomic_wrapper< *floating-point* >,
     atomic_wrapper< T * >,
     atomic_wrapper< T[] >
 
   - atomic< T & >,
-    atomic< *integral* & >,
-    atomic< *floating-point* & >,
     atomic< T * & >,
     atomic< T[] >
 
@@ -191,25 +188,24 @@ Proposal
   | __cpp_lib_atomic_ref
 
 -------------------------------------------
-*add to* 29.2 Header <atomic> synopsis
+*add to* Header <atomic> synopsis
 -------------------------------------------
 
   |  namespace std {
   |  namespace experimental {
   |
   |    template< class T > struct atomic_ref ;
-  |    template<> struct atomic_ref< *integral* >;
-  |    template<> struct atomic_ref< *floating-point* >;
   |    template< class T > struct atomic_ref< T \* >;
   |    template< class T > struct atomic_ref< T[] >;
   |
   |  }}
 
 -------------------------------------------
-*add to* 29.5 Atomic Types
+*add to* Class template **atomic**
 -------------------------------------------
 
   |  template< class T > struct atomic_ref {
+  |    using value_type = T;
   |    static constexpr size_t required_alignment = *implementation-defined* ;
   |    static constexpr bool is_always_lock_free = *implementation-defined* ;
   |    bool is_lock_free() const noexcept;
@@ -222,170 +218,22 @@ Proposal
   |    bool compare_exchange_weak( T& , T , memory_order = memory_order_seq_cst ) const noexcept;
   |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
   |
-  |    ~atomic_ref();
   |    atomic_ref() = delete ;
   |    atomic_ref( const atomic_ref & ) = delete ;
   |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
   |    explicit atomic_ref( T & obj ); // *wrapping* constructor
-  |    explicit operator bool () const noexcept; // *wraps*
   |
   |    T operator=(T) const noexcept ;
   |  };
-  |
-  |  template<> struct atomic_ref< *integral* > {
-  |    static constexpr size_t required_alignment = *implementation-defined* ;
-  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
-  |    bool is_lock_free() const noexcept;
-  |    void store( *integral* , memory_order = memory_order_seq_cst ) const noexcept;
-  |    *integral* load( memory_order = memory_order_seq_cst ) const noexcept;
-  |    operator *integral* () const noexcept ;
-  |    *integral* exchange( *integral* , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_weak( *integral* & , *integral* , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_strong( *integral* & , *integral*  , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_weak( *integral* & , *integral*  , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_strong( *integral* &, *integral* , memory_order = memory_order_seq_cst ) const noexcept;
-  |
-  |    *integral* fetch_add( *integral* , memory_order = memory_order_seq_cst) const noexcept;
-  |    *integral* fetch_sub( *integral* , memory_order = memory_order_seq_cst) const noexcept;
-  |    *integral* fetch_and( *integral* , memory_order = memory_order_seq_cst) const noexcept;
-  |    *integral* fetch_or(  *integral* , memory_order = memory_order_seq_cst) const noexcept;
-  |    *integral* fetch_xor( *integral* , memory_order = memory_order_seq_cst) const noexcept;
-  |
-  |    ~atomic_ref();
-  |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
-  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
-  |    
-  |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
-  |    explicit operator bool () const noexcept; // *wraps*
-  |
-  |    *integral* operator=( *integral* ) const noexcept ;
-  |    *integral* operator++(int) const noexcept;
-  |    *integral* operator--(int) const noexcept;
-  |    *integral* operator++() const noexcept;
-  |    *integral* operator--() const noexcept;
-  |    *integral* operator+=( *integral* ) const noexcept;
-  |    *integral* operator-=( *integral* ) const noexcept;
-  |    *integral* operator&=( *integral* ) const noexcept;
-  |    *integral* operator|=( *integral* ) const noexcept;
-  |    *integral* operator^=( *integral* ) const noexcept;
-  |  };
-  |
-  |  template<> struct atomic_ref< *floating-point* > {
-  |    static constexpr size_t required_alignment = *implementation-defined* ;
-  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
-  |    bool is_lock_free() const noexcept;
-  |    void store( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
-  |    *floating-point* load( memory_order = memory_order_seq_cst ) const noexcept;
-  |    operator *floating-point* () const noexcept ;
-  |    *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
-  |
-  |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
-  |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
-  |
-  |    ~atomic_ref();
-  |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
-  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
-  |
-  |    explicit atomic_ref( *floating-point* & obj ) noexcept ;
-  |    explicit operator bool () const noexcept;
-  |
-  |    *floating-point* operator=( *floating-point* ) noexcept ;
-  |    *floating-point* operator+=( *floating-point* ) const noexcept ;
-  |    *floating-point* operator-=( *floating-point* ) const noexcept ;
-  |  };
-  |
-  |  template<class T> struct atomic_ref< T * > {
-  |    static constexpr size_t required_alignment = *implementation-defined* ;
-  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
-  |    bool is_lock_free() const noexcept;
-  |    void store( T * , memory_order = memory_order_seq_cst ) const noexcept;
-  |    T * load( memory_order = memory_order_seq_cst ) const noexcept;
-  |    operator T * () const noexcept ;
-  |    T * exchange( T * , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_weak( T * & , T * , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_strong( T * & , T *  , memory_order , memory_order ) const noexcept;
-  |    bool compare_exchange_weak( T * & , T *  , memory_order = memory_order_seq_cst ) const noexcept;
-  |    bool compare_exchange_strong( T * &, T * , memory_order = memory_order_seq_cst ) const noexcept;
-  |
-  |    T * fetch_add( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;
-  |    T * fetch_sub( ptrdiff_t , memory_order = memory_order_seq_cst) const noexcept;
-  |
-  |    ~atomic_ref();
-  |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
-  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
-  |    
-  |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
-  |    explicit operator bool () const noexcept; // *wraps*
-  |
-  |    T * operator=( T * ) const noexcept ;
-  |    T * operator++(int) const noexcept;
-  |    T * operator--(int) const noexcept;
-  |    T * operator++() const noexcept;
-  |    T * operator--() const noexcept;
-  |    T * operator+=( ptrdiff_t ) const noexcept;
-  |    T * operator-=( ptrdiff_t ) const noexcept;
-  |  };
-  |
-  |  template< class T > struct atomic_ref< T[] > {
-  |
-  |    static constexpr size_t required_alignment = *implementation defined* ;
-  |    static constexpr bool is_always_lock_free = *implementation defined* ;
-  |    bool is_lock_free() const noexcept ;
-  |
-  |    ~atomic_ref();
-  |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
-  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
-  |
-  |    atomic_array_ref( T * , size_t ); // wrapping constructor
-  |    explicit operator bool() const noexcept ;
-  |
-  |    size_t size() const noexcept ;
-  |
-  |    atomic_ref<T> operator[]( size_t ) const noexcept;
-  |  };
-
-1  There are generic class templates atomic<T> and atomic_ref<T>.
-
--------------------------------------------------------------------------
-*add* 29.6.6 Requirements for operations on atomic reference types
--------------------------------------------------------------------------
-
-In the following operation definitions:
-
-  - an *A* refers to one of the atomic reference types.
-
-  - a *C* refers to its corresponding non-atomic type
-
-  - an *M* refers to type of other argument for arithmetic operations.
-    For integral atomic reference types, *M* is *C*.
-    For atomic reference address types, *M* is **std::ptrdiff_t**.
-
-
-**static constexpr bool A::is_always_lock_free =** *implementation-defined* **;**
-
-  Is true if the atomic operations are always lock-free, and false otherwise.
-
-
-**bool A::is_lock_free() const noexcept;**
-
-  Returns: **true** if the atomic operations are lock-free, **false** otherwise.
 
 
 **static constexpr size_t required_alignment =** *implementation-defined* **;**
 
   The required alignment of an object to be referenced by an atomic reference,
-  which is at least ``align_of(C)``.
+  which is at least ``align_of(T)``.
   [Note: An architecture may support lock-free atomic operations
-  on objects of type *C* only if those objects meet a required
+  on objects of type *T* only if those objects meet a required
   alignment.  The intent is for *atomic_ref* to provide lock-free
   atomic operations whenever possible. 
   For example, an architecture may be able to support lock-free
@@ -393,12 +241,7 @@ In the following operation definitions:
   and not 8 bytes. - end note]
 
 
-**A::A() noexcept;**
-
-  Effects: **\*this** does not reference an object.
-
-
-**A::A( C & object );**
+**atomic_ref( T & obj );**
 
   This *wrapping constructor* constructs an *atomic reference*
   that references the non-atomic *object*.
@@ -426,195 +269,144 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
 
-**A::~A() noexcept ;**
 
-  Effects: [Note: If **\*this** references an acquired shared resource
-  then **\*this** releases that shared resource. - end note]
-
-**explicit A::operator bool () const noexept ;**
-
-  Returns: **true** if **\*this** references a non-atomic object,
-  otherwise **false**.
-
-
-**void A::atomic_store( C::desired, memory_order order = memory_order_seq_cst ) const noexcept;**
-
-  Requires: **\*this** references an object.
-  The order argument shall not be memory_order_consume,
-  memory_order_acquire, nor memory_order_acq_rel.
-
-  Effects: Atomically replaces the value referenced by **\*this**
-  with the value of *desired*.
-  Memory is affected according to the value of order.
-
-**C A::operator=( C desired ) const noexcept;**
-
-  Effects: As if by **A::store(desired)**.
-
-  Returns: *desired*.
-
-
-**void A::atomic_load( memory_order order = memory_order_seq_cst ) const noexcept;**
-
-  Requires: **\*this** references an object.
-  The order argument shall not be memory_order_release
-  nor memory_order_acq_rel.
-
-  Effects: Memory is affected according to the value of order.
-
-  Returns: Atomically returns the value referenced by **\*this** .
-
-
-**A::operator C() const noexcept;**
-
-  Effects:  As if by **A::load()**.
-
-
-**C A::exchange(C desired, memory_order order = memory_order_seq_cst) noexcept;**
-
-  Requires: **\*this** references an object.
-
-  Effects: Atomically replaces the value referenced by **\*this**
-  with *desired*. Memory is affected according to the value of *order*.
-  These operations are atomic read-modify-write operations (1.10).
-
-  Returns: Atomically returns the value referenced by **\*this**
-  immediately before the effects.
-
-
-| **bool A::compare_exchange_weak(C & expected, C desired, memory_order success, memory_order failure) const noexcept;**
-| **bool A::compare_exchange_strong(C & expected, C desired, memory_order success, memory_order failure) const noexcept;**
-| **bool A::compare_exchange_weak(C & expected, C desired,memory_order order = memory_order_seq_cst) const noexcept;**
-| **bool A::compare_exchange_strong(C & expected, C desired, memory_order order = memory_order_seq_cst) const noexcept;**
-
-  Requires: **\*this** references an object.
-  The *failure* argument shall not be
-  memory_order_release nor memory_order_acq_rel.
-  The *failure* argument shall be no stronger than the *success* argument.
-
-  Effects: Retrieves the value in *expected*.
-  It then atomically compares the contents of the memory referenced
-  by **\*this** for equality with that previously retrieved from
-  *expected*, and if true, replaces the contents of the memory
-  referenced by **\*this** with that in *desired*.
-  If and only if the comparison is true, memory is affected
-  according to the value of success, and if the comparison is false,
-  memory is affected according to the value of failure.
-  When only one memory_order argument is supplied,
-  the value of success is *order*, and the value of failure is *order*
-  except that a value of memory_order_acq_rel shall be replaced by
-  the value memory_order_acquire and a value of
-  memory_order_release shall be replaced by the value memory_order_relaxed.
-  If and only if the comparison is false then, after the atomic operation,
-  the contents of the memory in *expected* are replaced by the value read
-  from memory referenced by **\*this** during the atomic comparison.
-  If the operation returns true, these operations are atomic
-  read-modify-write operations (1.10) on the memory referenced
-  by **\*this**.  Otherwise, these operations are atomic load operations
-  on that memory.
-
-  Returns: The result of the comparison.
-
-  [Note: See 29.6.5 p24-27 notes and remarks. --end node]
-
-
-**A::fetch_**\ *key*\ **(M operand, memory_order order = memory_order_seq_cst) const noexcept;**
-
-  Requires: **\*this** references an object.
-
-  Effects: Atomically replaces the value referenced by **\*this**
-  with the result of the computation applied to the value
-  referenced by **\*this** and the given operand.
-  Memory is affected according to the value of *order*.
-  These operations are atomic read-modify-write operations (1.10).
-
-  Returns: Atomically, the value referenced by **\*this**
-  immediately before the effects.
-
-  *Remark:* For signed integer types, arithmetic is defined to use
-  two’s complement representation and there are no undefined results.
-  For floating-point types, if the result is not mathematically defined or
-  not in the range of representable values for its type (5p4)
-  the result is unspecified, but the operations
-  otherwise have no undefined behavior.
-  Atomic arithmetic operations on *floating-point*
-  should conform to **std::numeric_limits<** *floating-point* **>**
-  traits associated with the floating-point type (18.3.2).
-  The floating-point environment (26.4) for atomic arithmetic operations
-  on *floating-point* may be different than the calling thread's
-  floating-point environment.
-  For address types, the result may be an undefined address, but the operations
-  otherwise have no undefined behavior.
-
-
-**A::operator** *op* **=(M operand) const noexcept;**
-
-  Effects: As if by fetch_key (operand).
-
-  Returns: fetch_key (operand) op operand.
-
-**A::operator++(int) const noexcept;**
-
-  Returns: fetch_add(1).
-
-**A::operator--(int) const noexcept;**
-
-  Returns: fetch_sub(1).
-
-**A::operator++() const noexcept;**
-
-  Effects: As if by fetch_add(1).
-
-  Returns: fetch_add(1) + 1.
-
-**C::operator--() const noexcept;**
-
-  Effects: As if by fetch_sub(1).
-
-  Returns: fetch_sub(1) - 1.
-
-
--------------------------------------------------------------------------
-*add* 29.6.7 Requirements for operations on atomic array reference types
--------------------------------------------------------------------------
-
-In the following operation definitions:
-
-  - an *A* refers to one of the atomic array reference types.
-
-  - a *C* refers to its corresponding non-atomic type
-
-
-**static constexpr bool A::is_always_lock_free =** *implementation-defined* **;**
-
-  Is true if the atomic operations are always lock-free, and false otherwise.
-
-
-**bool A::is_lock_free() const noexcept;**
-
-  Returns: **true** if atomic operations are lock-free, **false** otherwise.
-
-
-**static constexpr size_t required_alignment =** *implementation-defined* **;**
-
-  The required alignment of an array to be referenced by an atomic reference,
-  which is at least ``align_of(C)``.
-
-  Remark: An architecture may support lock-free atomic operations
-  on objects of type *C* only if those objects meet a required
-  alignment.  The intent is for *atomic_ref<T[]>* to provide lock-free
-  atomic operations whenever possible. 
-  [Note: For example, an architecture may be able to support lock-free
-  operations on **std::complex<double>** only if aligned to 16 bytes
-  and not 8 bytes. - end note]
-
-
-**A::A() noexcept;**
-
-  Effects: **\*this** does not reference an array and
-  therefore **operator bool() == false**.
-
-**A::A( C * array , size_t length );**
+-------------------------------------------
+*add to* Specializations for integers
+-------------------------------------------
+
+  |  template<> struct atomic_ref< *integral* > {
+  |    using value_type = *integral* ;
+  |    using difference_type = value_type;
+  |    static constexpr size_t required_alignment = *implementation-defined* ;
+  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |    bool is_lock_free() const noexcept;
+  |    void store( *integral* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    *integral* load( memory_order = memory_order_seq_cst ) const noexcept;
+  |    operator *integral* () const noexcept ;
+  |    *integral* exchange( *integral* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_weak( *integral* & , *integral* , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_strong( *integral* & , *integral*  , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_weak( *integral* & , *integral*  , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_strong( *integral* &, *integral* , memory_order = memory_order_seq_cst ) const noexcept;
+  |
+  |    *integral* fetch_add( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_sub( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_and( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_or(  *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *integral* fetch_xor( *integral* , memory_order = memory_order_seq_cst) const noexcept;
+  |
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
+  |    
+  |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
+  |
+  |    *integral* operator=( *integral* ) const noexcept ;
+  |    *integral* operator++(int) const noexcept;
+  |    *integral* operator--(int) const noexcept;
+  |    *integral* operator++() const noexcept;
+  |    *integral* operator--() const noexcept;
+  |    *integral* operator+=( *integral* ) const noexcept;
+  |    *integral* operator-=( *integral* ) const noexcept;
+  |    *integral* operator&=( *integral* ) const noexcept;
+  |    *integral* operator|=( *integral* ) const noexcept;
+  |    *integral* operator^=( *integral* ) const noexcept;
+  |  };
+
+-----------------------------------------------------
+*add to* Specializations for floating-point
+-----------------------------------------------------
+
+  |  template<> struct atomic_ref< *floating-point* > {
+  |    using value_type = *floating-point* ;
+  |    using difference_type = value_type;
+  |    static constexpr size_t required_alignment = *implementation-defined* ;
+  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |    bool is_lock_free() const noexcept;
+  |    void store( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    *floating-point* load( memory_order = memory_order_seq_cst ) const noexcept;
+  |    operator *floating-point* () const noexcept ;
+  |    *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) const noexcept;
+  |
+  |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
+  |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
+  |
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
+  |
+  |    explicit atomic_ref( *floating-point* & obj ) noexcept ;
+  |
+  |    *floating-point* operator=( *floating-point* ) noexcept ;
+  |    *floating-point* operator+=( *floating-point* ) const noexcept ;
+  |    *floating-point* operator-=( *floating-point* ) const noexcept ;
+  |  };
+
+
+-----------------------------------------------------
+*add to* Partial specializations for pointers
+-----------------------------------------------------
+
+  |  template<class T> struct atomic_ref< T * > {
+  |    using value_type = T * ;
+  |    using difference_type = ptrdiff_t;
+  |    static constexpr size_t required_alignment = *implementation-defined* ;
+  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |    bool is_lock_free() const noexcept;
+  |    void store( T * , memory_order = memory_order_seq_cst ) const noexcept;
+  |    T * load( memory_order = memory_order_seq_cst ) const noexcept;
+  |    operator T * () const noexcept ;
+  |    T * exchange( T * , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_weak( T * & , T * , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_strong( T * & , T *  , memory_order , memory_order ) const noexcept;
+  |    bool compare_exchange_weak( T * & , T *  , memory_order = memory_order_seq_cst ) const noexcept;
+  |    bool compare_exchange_strong( T * &, T * , memory_order = memory_order_seq_cst ) const noexcept;
+  |
+  |    T * fetch_add( difference_type , memory_order = memory_order_seq_cst) const noexcept;
+  |    T * fetch_sub( difference_type , memory_order = memory_order_seq_cst) const noexcept;
+  |
+  |    ~atomic_ref();
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
+  |    
+  |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
+  |
+  |    T * operator=( T * ) const noexcept ;
+  |    T * operator++(int) const noexcept;
+  |    T * operator--(int) const noexcept;
+  |    T * operator++() const noexcept;
+  |    T * operator--() const noexcept;
+  |    T * operator+=( difference_type ) const noexcept;
+  |    T * operator-=( difference_type ) const noexcept;
+  |  };
+
+---------------------------------------------------------------
+*add to* Partial specializations for unbounded arrays
+---------------------------------------------------------------
+
+  |  template< class T > struct atomic_ref< T[] > {
+  |
+  |    static constexpr size_t required_alignment = *implementation defined* ;
+  |    static constexpr bool is_always_lock_free = *implementation defined* ;
+  |    bool is_lock_free() const noexcept ;
+  |
+  |    atomic_ref() = delete ;
+  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
+  |
+  |    atomic_array_ref( T * , size_t ); // wrapping constructor
+  |
+  |    size_t size() const noexcept ;
+  |
+  |    atomic_ref<T> operator[]( size_t ) const noexcept;
+  |  };
+
+**atomic_ref( T * array , size_t length );**
 
   This *wrapping constructor* constructs an *atomic_ref<T[]>*
   that references an array of non-atomic elements
@@ -642,19 +434,7 @@ In the following operation definitions:
   to enable atomic operations applied to the referenced
   non-atomic members of referenced array. - end note]
 
-
-**A::~A() noexcept ;**
-
-  Effects: [Note: If **\*this** references acquired shared resources
-  then **\*this** releases those shared resources. - end note]
-
-**explicit A::operator bool () const noexept ;**
-
-  Returns: **true** if **\*this** references a non-atomic array,
-  otherwise **false**.
-
-
-**atomic_ref<C> A::operator[]( size_t i ) const noexcept ;**
+**atomic_ref<T> operator[]( size_t i ) const noexcept ;**
 
   Requires: **i < size()** and the lifetime of the returned
   **atomic_ref**\ shall not exceed the lifetime of the
