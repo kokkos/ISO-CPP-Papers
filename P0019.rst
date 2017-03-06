@@ -1,10 +1,10 @@
 ===================================================================
-D0019r5 : Atomic View
+P0019r5 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0019r5
-:Date: 2017-03-04
+:Number: P0019r5
+:Date: 2017-03-06
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -182,7 +182,7 @@ Proposal
 ******************************************************************
 
 -------------------------------------------
-*add* feature test macro
+Recommended feature text macro
 -------------------------------------------
 
   | __cpp_lib_atomic_ref
@@ -201,7 +201,7 @@ Proposal
   |  }}
 
 -------------------------------------------
-*add to* Class template **atomic**
+*add section to* Class template atomic
 -------------------------------------------
 
   |  template< class T > struct atomic_ref {
@@ -231,40 +231,40 @@ Proposal
 **static constexpr size_t required_alignment =** *implementation-defined* **;**
 
   The required alignment of an object to be referenced by an atomic reference,
-  which is at least ``align_of(T)``.
+  which is at least ``alignof(T)``.
   [Note: An architecture may support lock-free atomic operations
   on objects of type *T* only if those objects meet a required
   alignment.  The intent is for *atomic_ref* to provide lock-free
   atomic operations whenever possible. 
   For example, an architecture may be able to support lock-free
-  operations on **std::complex<double>** only if aligned to 16 bytes
-  and not 8 bytes. - end note]
+  operations on ``std::complex<double>`` only if aligned to
+  ``2*alignof(double)`` and not ``alignof(double)`` . - end note]
 
 
 **atomic_ref( T & obj );**
 
-  This *wrapping constructor* constructs an *atomic reference*
-  that references the non-atomic *object*.
-  Atomic operations applied to *object* through a referencing
+  This wrapping constructor constructs an atomic reference
+  that references the non-atomic object.
+  Atomic operations applied to object through a referencing
   *atomic reference* are atomic with respect to atomic operations
   applied through any other *atomic reference* that references that *object*.
 
-  Requires: The referenced non-atomic *object* shall be
-  aligned to **required_alignment**.
-  The lifetime (3.8) of **\*this**
+  *Requires:* The referenced non-atomic object shall be
+  aligned to ``required_alignment``.
+  The lifetime (3.8) of ``*this``
   shall not exceed the lifetime of the referenced non-atomic object.
-  While any **atomic_ref** instance exists that references *object*
-  all accesses of that *object* shall exclusively occur through those
-  **atomic_ref** instances.
+  While any ``atomic_ref`` instance exists that references the object
+  all accesses of that object shall exclusively occur through those
+  ``atomic_ref`` instances.
   If the referenced *object* is of a class or aggregate type
   then members of that object shall not be concurrently
-  wrapped by an **atomic_ref** object.
-  The referenced *object* shall not be a member of an array that
-  is wrapped by an **atomic_ref<T[]>** .
+  wrapped by an ``atomic_ref`` object.
+  The referenced object shall not be a member of an array that
+  is wrapped by an ``atomic_ref<T[]>`` .
   [Note: Other implementation dependent conditions may exist. - end note]
 
-  Effects: **\*this** references the non-atomic *object*.
-  [Note: The *wrapping constructor* may acquire a shared resource,
+  *Effects:* ``*this`` references the non-atomic object*
+  [Note: The wrapping constructor may acquire a shared resource,
   such as a lock associated with the referenced object,
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
@@ -385,9 +385,16 @@ Proposal
   |    T * operator-=( difference_type ) const noexcept;
   |  };
 
----------------------------------------------------------------
-*add to* Partial specializations for unbounded arrays
----------------------------------------------------------------
+-------------------------------------------------------------------------
+*add to* Partial specializations for elements of array of unknown bound
+-------------------------------------------------------------------------
+
+Performing compatibility verification within the atomic reference
+wrapping constructor for many elements in an array can introduce
+unecessary, redundant operations.
+The *atomic array reference* partial specialization wraps the entire array
+such that compatibility verification can be performed once and
+amortized among all atomic references to members of that array.
 
   |  template< class T > struct atomic_ref< T[] > {
   |
@@ -408,27 +415,27 @@ Proposal
 
 **atomic_ref( T * array , size_t length );**
 
-  This *wrapping constructor* constructs an *atomic_ref<T[]>*
+  This wrapping constructor constructs an ``atomic_ref<T[]>``
   that references an array of non-atomic elements
   spanning ``[array..array+length)``.
 
-  Requires: The referenced non-atomic array shall be
-  aligned to **required_alignment**.
-  The lifetime (3.8) of **\*this**
+  *Requires:* The referenced non-atomic array shall be
+  aligned to ``required_alignment``.
+  The lifetime (3.8) of ``*this``
   shall not exceed the lifetime of the referenced non-atomic array.
-  All **atomic_ref<T[]>** instances that reference any element of
+  All ``atomic_ref<T[]>`` instances that reference any element of
   the array shall reference the same span of the array.
-  As long as any **atomic_ref<T[]>** instance exists that references
+  As long as any ``atomic_ref<T[]>`` instance exists that references
   array all accesses to members of that array shall exclusively occur
-  through those **atomic_ref<T[]>** instances.
-  No element of array is concurrently *wrap constructed* by an
-  **atomic_ref<T>**.
+  through those ``atomic_ref<T[]>`` instances.
+  No element of array is concurrently wrap constructed by an
+  ``atomic_ref<T>``.
   [Note: Other implementation dependent conditions may exist. - end note]
 
-  Effects: **\*this** references the non-atomic array.
+  *Effects:* ``*this`` references the non-atomic array.
   Atomic operations on members of array are atomic with respect
   to atomic operations on members referenced through any other
-  **atomic_ref<T[]>** instance.
+  ``atomic_ref<T[]>`` instance.
   [Note: The *wrapping constructor* may acquire shared resources,
   such as a locks associated with the referenced array,
   to enable atomic operations applied to the referenced
@@ -436,9 +443,9 @@ Proposal
 
 **atomic_ref<T> operator[]( size_t i ) const noexcept ;**
 
-  Requires: **i < size()** and the lifetime of the returned
-  **atomic_ref**\ shall not exceed the lifetime of the
-  associated **atomic_ref<T[]>**.
+  *Requires:* ``i < size()`` and the lifetime of the returned
+  ``atomic_ref<T>`` shall not exceed the lifetime of the
+  associated ``atomic_ref<T[]>``.
   [Note: Analogous to the lifetime of an iterator with respect to the
   lifetime of the associated container. - end note]
 

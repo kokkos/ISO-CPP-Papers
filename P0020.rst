@@ -1,10 +1,10 @@
 ===================================================================
-D0020r5 : Floating Point Atomic
+P0020r5 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
 :Number: P0020r5
-:Date: 2017-03-04
+:Date: 2017-03-06
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -38,7 +38,7 @@ P0020r4
   - 2016-11-09 Issaquah SG1 decision: move to LEWG targeting C++20
 
 ------------------------------------------------------------
-D0020r5
+P0020r5
 ------------------------------------------------------------
 
   - 2017-03-01 Kona LEWG review and consensus: move to C++20 IS
@@ -52,6 +52,9 @@ D0020r5
     in hardware was "do not change."
 
   - Align with C++17 working draft atomic wording as per P0558r1
+
+  - Note: Section and paragraph numbers have not yet been updated
+    to C++17 working draft new section numbering.
 
 ******************************************************************
 Overview / Motivation
@@ -69,14 +72,13 @@ Proposal:
 ******************************************************************
 
 ---------------------------------------------------------------
-*add to 32.7* Specializations for *floating-point*
+*add section to 32.7* Specializations for floating-point types
 ---------------------------------------------------------------
 
-There shall be explicit specializations of the **atomic**
-template for the 
-floating-point types ``float`` and ``double``.
+The shall be specializations of the **atomic** template for 
+floating-point types ``float``, ``double``, ``long double``.
 For each such floating-point type *floating-point* ,
-the specialization **atomic<** *floating-point* **>** provides
+the specialization ``atomic<`` *floating-point* ``>`` provides
 additional atomic operations appropriate to floating-point types.
 
   |  template<> struct atomic< *floating-point* > {
@@ -121,7 +123,6 @@ additional atomic operations appropriate to floating-point types.
 
 The atomic floating-point specializations shall be standard-layout structs.
 They shall each have a trivial default constructor and a trivial destructor.
-They shall each support aggregate initialization syntax.
 
 Descriptions are provided below only for members that differ from the primary template.
 
@@ -137,12 +138,11 @@ Descriptions are provided below only for members that differ from the primary te
   before the effects.
 
   *Remark:*
-  For floating-point types, if the result is not mathematically defined or
-  not in the range of representable values for its type (5p4)
+  If the result is not a representable value for its type (5p4)
   the result is unspecified, but the operations
   otherwise have no undefined behavior.
   Atomic arithmetic operations on *floating-point*
-  should conform to **std::numeric_limits<** *floating-point* **>**
+  should conform to ``std::numeric_limits<`` *floating-point* ``>``
   traits associated with the floating-point type (18.3.2).
   The floating-point environment (26.4) for atomic arithmetic operations
   on *floating-point* may be different than the calling thread's
