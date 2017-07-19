@@ -8,7 +8,7 @@ D0737r0 : Execution Context of Execution Agents
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Audience: SG1 Concurrency and Parallelism
-:URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/Dxxxx.rst
+:URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0737_ExecContext.rst
 
 
 ******************************************************************
