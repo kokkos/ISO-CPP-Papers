@@ -76,7 +76,7 @@ Minimal *Concept* Specification
 
   template< class ... ExecutorProperties >
     /* exposition only */ detail::executor_t< ExecutionContext , ExecutorProperties... >
-  executor( ExecutionContext /* exposition only */ , ExecutorProperties... );
+  executor( /* exposition only */ ExecutionContext & , ExecutorProperties... );
 
 ..
 
@@ -107,8 +107,8 @@ Let ``EC`` be an *ExecutionContext* type.
   only poll to honor the time out.  --end note]
 
 | ``template< class ... ExecutorProperties >``
-|   *detail::executor_t< EC , ExecutorProperties... >*
-| ``executor(`` *EC* ``ec , ExecutorProperties ... p );``
+|   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
+| ``executor( EC & ec , ExecutorProperties ... p );``
 
   Returns:
   An *executor* with *execution context* ``ec`` and
