@@ -25,6 +25,8 @@ D0737r0
 
     - Proposed definition of ExecutionContext *concept*
     - Proposed wait functions
+    - Proposed standard async execution context and executor
+    - Proposed interface for generating executors from execution context.
     - Interest in each of the suggested potential additions
       for initial insertion into Executors TS
 
@@ -48,7 +50,7 @@ A callable submitted to an execution context is **incomplete** until it
 
 
 ------------------------------------------------------------------------------
-Minimal Specification
+Minimal *Concept* Specification
 ------------------------------------------------------------------------------
 
 .. code-block:: c++
@@ -62,22 +64,36 @@ Minimal Specification
     ExecutionContext & operator = ( ExecutionContext && ) = delete ;
 
     // Waiting functions:
+    void wait();
     template< class Clock , class Duration >
     bool wait_until( chrono::time_point<Clock,Duration> const & );
     template< class Rep , class Period >
     bool wait_for( chrono::duration<Rep,Period> const & );
-    void wait();
   };
 
   bool operator == ( ExecutionContext const & , ExecutionContext const & );
   bool operator != ( ExecutionContext const & , ExecutionContext const & );
 
+  template< class ... ExecutorProperties >
+    /* exposition only */ detail::executor_t< ExecutionContext , ExecutorProperties... >
+  executor( ExecutionContext /* exposition only */ , ExecutorProperties... );
+
 ..
 
+Let ``EC`` be an *ExecutionContext* type.
+
+``void EC::wait();``
+
+  Effects:
+  Waits until the number of incomplete callables submitted to the
+  execution conect is observed to be zero.
+  [Note: The execution agent from which the wait function is called should
+  *boost block* execution agents in the execution context. --end note]
+
 | ``template< class Clock , class Duration >``
-| ``bool wait_until( chrono::time_point<Clock,Duration> const & dt );``
+| ``bool EC::wait_until( chrono::time_point<Clock,Duration> const & dt );``
 | ``template< class Rep , class Period >``
-| ``bool wait_for( chrono::duration<Rep,Period> const & dt );``
+| ``bool EC::wait_for( chrono::duration<Rep,Period> const & dt );``
 
   Returns:
   ``true`` if the number of incomplete callables is observed zero
@@ -87,36 +103,106 @@ Minimal Specification
   Waits at least ``dt`` for the number of incomplete
   callables submitted to the execution context to be observed zero.
   [Note: The execution agent from which the wait function is called should
-  *boost block* execution agents in the execution context. --end note]
+  *boost block* execution agents in the execution context, but may
+  only poll to honor the time out.  --end note]
 
-``void wait();``
+| ``template< class ... ExecutorProperties >``
+|   *detail::executor_t< EC , ExecutorProperties... >*
+| ``executor(`` *EC* ``ec , ExecutorProperties ... p );``
+
+  Returns:
+  An *executor* with *execution context* ``ec`` and
+  execution properties ``p``.
+  [Note: The *detail::executor_t* is for exposition only denoting the
+  expectation that an implementation will use an implementation-defined
+  metafunction to determine the type of the returned executor. --end note]
+
+  Remark:
+  A particular execution property may have semantic and interface implications,
+  such as whether application of the exector returns a future or not
+  (sometimes referred to as a two-way or one-way property).
+  A particular execution property may only be a performance hint.
+
+
+------------------------------------------------------------------------------
+Standard Async Execution Context and Executor
+------------------------------------------------------------------------------
+
+.. code-block:: c++
+
+  namespace std {
+
+  class async_execution_context_t {
+    // conforming to ExecutionContext concept
+    // ... and other implementation defined members
+  };
+
+  class async_executor_t ; // implementation defined
+
+  extern async_execution_context_t async_execution_context ;
+
+  template< class ... ExecutorProperties >
+  async_executor_t
+  executor( async_execution_context_t & ec , ExecutorProperties ... p );
+
+  template< class Function , class ... Args >
+  future<std::result_of<std::decay_t<Function>(std::decay_t<Args>...)>>
+  async( async_executor_t exec , Function && f , Args && ... args );
+
+  }
+
+..
+
+``extern async_execution_context_t async_execution_context``
+
+  Global execution context object enabling the
+  equivalent invocation of callables 
+  through the with-executor ``std::async``
+  and without-executor ``std::async``.
+  Guaranteed to be initialized during or before the first use.
+
+
+| ``template< class ... ExecutorProperties >``
+| ``async_executor_t``
+| ``executor( async_execution_context_t & ec , ExecutorProperties ...p );``
+
+  Returns:
+  An ``async_executor_t`` executor with execution context ``ec``
+  and executor properties ``p``. 
+  Executor properties ``p`` can be empty, 
+  can include ``std::launch::async`` or ``std::launch::deferred``,
+  and include other implementation defined launch properties.
+
+| ``template< class Function , class ... Args >``
+| ``future<std::result_of<std::decay_t<Function>(std::decay_t<Args>...)>>``
+| ``async( async_executor_t exec , Function && f , Args && ... args );``
 
   Effects:
-  Waits until the number of incomplete callables submitted to the
-  execution conect is observed to be zero.
-  [Note: The execution agent from which the wait function is called should
-  *boost block* execution agents in the execution context. --end note]
+  If ``exec`` has a ``std::launch`` *policy*
+  then equivalent to invoking ``std::async(`` *policy* ``, f , args... );``
+  otherwise equivalent to invoking ``std::async( f , args... );``
+  Equivalency is symmetric with respect to the non-executor ``std::async``
+  functions.
+
+.. code-block:: c++
+
+  // Equivalent without- and with-executor async statements without launch policy
+
+  auto f = std::async( []{ std::cout << "anonymous way\n"} );
+  auto f = std::async( std::executor( async_execution_context ) , []{ std::cout << "executor way\n"} );
+
+  // Equivalent without- and with-executor async statements with launch policy
+
+  auto f = std::async( std::launch::deferred , []{ std::cout << "anonymous way\n"} );
+  auto f = std::async( std::executor( async_execution_context , std::launch::deferred ) , []{ std::cout << "executor way\n"} );
+
+..
 
 ******************************************************************
 Potential additions, request straw poll for each
 ******************************************************************
 
-  1. The execution context to which ``std::async`` submits callables.
-
-  2. Standard interface for generating executors from execution context.
-     For example
-
-    | ``template< class ... ExecutorProperties >``
-    | ``executor(`` *ExecutionContext* ``, ExecutorProperties... );``
-    |
-    | Illustrative usage:
-    |
-    |   auto f =
-    |     executor( std::async_execution_context, twoway, nonblocking, newthread )
-    |       .execute( []{ std::cout << "Hello, I'm a std::async lambda\\n" ; } );
-
-
-  3. A mechanism to accumulate and query exceptions thrown by
+  #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
 
   #. A mechanism to provide a callable that is invoked to consume
