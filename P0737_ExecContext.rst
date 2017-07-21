@@ -40,13 +40,49 @@ Add this minimal ExecutionContext specification to the Executors TS.
 Concept / Definition
 -----------------------------------------------------
 
-An **execution context** manages a set of 
+A concurrency and parallelism **execution context** manages a set of 
 execution agents on a set of **execution resources**.
-These execution agents executes callables submitted by an **executor**
-to the execution context.
-A callable submitted to an execution context is **incomplete** until it 
+These execution agents execute work, implemented by a callable,
+that is submitted to the execution context by an **executor**.
+One or more types of executors may submit work to the same
+execution context.
+Work to an execution context is **incomplete** until it 
 (1) is invoked and exits execution by return or exception 
 (2) its submission for execution is cancelled.
+
+-----------------------------------------------------
+Contrast to Networking TS (N4656) Execution Context
+-----------------------------------------------------
+
+The Networking TS (N4656 / 2017-03-17) defines a
+*networking execution context* as
+
+  "Class ``execution_context`` implements an extensible, type-safe,
+  polymorphic set of services, indexed by service type."
+
+The networking TS requirements for ``execution_context``
+specify a single ``execution_context::executor_type``.
+This executor type has numerous work submission member functions
+each with particular semantics.
+
+
+Differences between the proposed parallelism and concurrency execution context
+and the networking execution context include the following.
+
+  #.  Limited to executing work, as opposed to providing unspecified services.
+
+  #.  Is not a concrete base class from which other forms of execution contexts
+      are specialized ( ``system_context`` , ``io_context`` ) are derived.
+
+  #.  An extensible one-to-many relationship between an execution context type
+      and executor types that may submit work, as opposed to a particular
+      executor type with specific work submission functions.
+
+  #.  The proposed ``async_execution_context`` could be viewed as having
+      similar intent as the networking ``system_context``.
+      The significant difference of is interchangeability with
+      ``std::async`` usage and extensibility to other executors
+      versus the prescribed networking ``system_executor``.
 
 
 ------------------------------------------------------------------------------
@@ -142,7 +178,7 @@ Standard Async Execution Context and Executor
   extern async_execution_context_t async_execution_context ;
 
   template< class ... ExecutorProperties >
-  async_executor_t
+    /* exposition only */ detail::executor_t< async_execution_context_t , ExecutorProperties... >
   executor( async_execution_context_t & ec , ExecutorProperties ... p );
 
   template< class Function , class ... Args >
@@ -163,15 +199,14 @@ Standard Async Execution Context and Executor
 
 
 | ``template< class ... ExecutorProperties >``
-| ``async_executor_t``
+|   ``/* exposition only */ detail::executor_t< async_execution_context_t , ExecutorProperties... >``
 | ``executor( async_execution_context_t & ec , ExecutorProperties ...p );``
 
   Returns:
-  An ``async_executor_t`` executor with execution context ``ec``
-  and executor properties ``p``. 
-  Executor properties ``p`` can be empty, 
-  can include ``std::launch::async`` or ``std::launch::deferred``,
-  and include other implementation defined launch properties.
+  An *executor* with *execution context* ``ec`` and
+  execution properties ``p``.
+  If ``p`` is empty, is ``std::launch::async``, or is ``std::launch::deferred``
+  the *executor* type is ``async_executor_t``.
 
 | ``template< class Function , class ... Args >``
 | ``future<std::result_of<std::decay_t<Function>(std::decay_t<Args>...)>>``
@@ -198,6 +233,7 @@ Standard Async Execution Context and Executor
 
 ..
 
+
 ******************************************************************
 Potential additions, request straw poll for each
 ******************************************************************
@@ -209,15 +245,19 @@ Potential additions, request straw poll for each
      exceptions thrown by callables that were submitted by a one-way executor.
 
   #. A mechanism for cancelling submitted callables that have not been invoked.
+     Similar intent as Networking TS ``system_executor::stop()``.
 
   #. A mechanism for aborting callables that are executing.
 
   #. A mechanism for preventing further submissions.
 
-  #. An **execution resource** concept.
+  #. An **execution resource** concept that identifies where execution agents
+     may run; e.g., HWLOC process/numa/cpu bitsets. 
 
   #. An **execution architecture** trait.
 
   #. A preferred-locality (affinity) memory space allocator
 
+  #. Proposal to revise Networking TS execution context to align with
+     parallelism and concurrency execution context.
 
