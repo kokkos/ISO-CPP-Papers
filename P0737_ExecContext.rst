@@ -203,13 +203,12 @@ Let ``EC`` be an *ExecutionContext* type.
 
 ``EC::~EC();``
 
-  Effects: Type dependent potential behaviors identifed by
+  Effects: Type dependent potential behaviors identified by
   to-be-defined *at destruction* traits.
 
     - ``wait()`` for all incomplete work.
     - Cancel work that is not executing and ``wait()`` for executing work.
     - Cancel work that is not executing and abort executing work.
-    - Cancel work that is not executing and detach executing work.
 
 ------------------------------------------------------------------------------
 Thread Execution Resource
