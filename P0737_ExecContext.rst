@@ -41,7 +41,8 @@ Concept / Definition
 -----------------------------------------------------
 
 A concurrency and parallelism **execution context** manages a set of 
-execution agents on a set of **execution resources**.
+execution agents on a set of **execution resources** of a given
+**execution architecture**.
 These execution agents execute work, implemented by a callable,
 that is submitted to the execution context by an **executor**.
 One or more types of executors may submit work to the same
@@ -49,6 +50,7 @@ execution context.
 Work to an execution context is **incomplete** until it 
 (1) is invoked and exits execution by return or exception 
 (2) its submission for execution is cancelled.
+
 
 -----------------------------------------------------
 Contrast to Networking TS (N4656) Execution Context
@@ -99,6 +101,16 @@ Minimal *Concept* Specification
     ExecutionContext & operator = ( ExecutionContext const & ) = delete ;
     ExecutionContext & operator = ( ExecutionContext && ) = delete ;
 
+    // Execution resource
+    using execution_resource_t = /* implementatin defined */
+
+    execution_resource_t const & execution_resource() const noexcept ;
+
+    // Executor generator
+    template< class ... ExecutorProperties >
+      /* exposition only */ detail::executor_t< ExecutionContext , ExecutorProperties... >
+    executor( ExecutorProperties... );
+
     // Waiting functions:
     void wait();
     template< class Clock , class Duration >
@@ -110,44 +122,55 @@ Minimal *Concept* Specification
   bool operator == ( ExecutionContext const & , ExecutionContext const & );
   bool operator != ( ExecutionContext const & , ExecutionContext const & );
 
-  template< class ... ExecutorProperties >
-    /* exposition only */ detail::executor_t< ExecutionContext , ExecutorProperties... >
-  executor( /* exposition only */ ExecutionContext & , ExecutorProperties... );
-
 ..
 
 Let ``EC`` be an *ExecutionContext* type.
 
+``EC::execution_resource_t const & EC::execution_resource() const noexcept ;``
+
+  Returns: A descriptor of the execution resource(s) utilized by this
+  execution context to execute work.
+  An execution architecture is denoted by the ``execution_resource_t`` type.
+
 ``void EC::wait();``
 
+  Requires:
+  Cannot be called from non-blocking work submitted to this execution context.
+  [Note: Work waiting upon itself guarantees deadlock. --end note]
+
   Effects:
-  Waits until the number of incomplete callables submitted to the
-  execution conect is observed to be zero.
+  Waits until the number of incomplete, non-blocking callables submitted
+  to the execution context is observed to be zero.
   [Note: The execution agent from which the wait function is called should
   *boost block* execution agents in the execution context. --end note]
+
 
 | ``template< class Clock , class Duration >``
 | ``bool EC::wait_until( chrono::time_point<Clock,Duration> const & dt );``
 | ``template< class Rep , class Period >``
 | ``bool EC::wait_for( chrono::duration<Rep,Period> const & dt );``
 
+  Requires:
+  Cannot be called from non-blocking work submitted to this execution context.
+  [Note: Work waiting upon itself can never return true. --end note]
+
   Returns:
   ``true`` if the number of incomplete callables is observed zero
   at any point during the call to wait.
 
   Effects:
-  Waits at least ``dt`` for the number of incomplete
-  callables submitted to the execution context to be observed zero.
+  Waits at least ``dt`` for the number of incomplete, non-blocking
+  callables submitted to the execution context is observed to be zero.
   [Note: The execution agent from which the wait function is called should
   *boost block* execution agents in the execution context, but may
   only poll to honor the time out.  --end note]
 
 | ``template< class ... ExecutorProperties >``
 |   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
-| ``executor( EC & ec , ExecutorProperties ... p );``
+| ``EC::executor( ExecutorProperties ... p );``
 
   Returns:
-  An *executor* with *execution context* ``ec`` and
+  An *executor* with **this** *execution context* and
   execution properties ``p``.
   [Note: The *detail::executor_t* is for exposition only denoting the
   expectation that an implementation will use an implementation-defined
@@ -161,6 +184,83 @@ Let ``EC`` be an *ExecutionContext* type.
 
 
 ------------------------------------------------------------------------------
+Thread Execution Resource
+------------------------------------------------------------------------------
+
+A *thread* executes on a *thread execution unit* within an
+*execution resource*.
+Threads can concurrently make forward progress only if they execute on
+different thread execution units.
+Conversely, a single thread execution unit cannot
+cause two or more threads to make concurrent forward progress.
+[Note: A *CPU hyperthread* is a common example of 
+a thread execution unit. --end note]
+
+Hierarchical topology of thread execution resources.
+
+.. code-block:: c++
+
+  struct thread_execution_resource_t {
+
+    std::vector<bool> const & affinity() const noexcept ;
+
+    int size() const noexcept ;
+
+    thread_execution_resource_t operator[]( int i ) const noexcept ;
+
+  private:
+    std::vector<bool> _units ; // exposition only
+  };
+
+  extern thread_execution_resource_t program_thread_execution_resource ;
+
+..
+
+``std::vector<bool> const & affinity() const noexcept ;``
+
+  Returns:
+  Bit vector *M* with size equal to the maximum number of
+  thread execution units available in the system.
+  Thread execution unit *k* is in the thread execution resource
+  if-and-only-if *M[k]* is set.
+
+
+``int size() const noexcept;``
+
+  Returns:
+  Number of *locality partitions* of the execution resource.
+
+
+``thread_execution_resource_t operator[]( int i ) const noexcept ;``
+
+  Requires: ``0 <= i < size()``
+
+  Returns: *Locality partition* of an execution resource.
+  Given thread execution resource ``E`` with
+  ``E.affinity()[k]`` set then there exists
+  one-and-only-one value of ``i`` such that ``E[i].affinity()[k]``
+  is set.
+
+  Remark:
+  Thread execution units residing in the same locality partition
+  are *more local* with respect to the memory system
+  than thread execution units in disjoint partitions.
+  For example, non-uniform memory access (NUMA) partitions.
+
+
+``extern thread_execution_resource_t program_thread_execution_resource ;``
+
+  Thread execution resources in which the program is permitted
+  to execute threads. 
+  [Note: For a Linux runtime calling
+  ``progream_thread_execution_resource.affinity()``
+  is equivalent to calling
+  ``sched_getaffinity`` for the program's process id.
+  --end note]
+
+
+
+------------------------------------------------------------------------------
 Standard Async Execution Context and Executor
 ------------------------------------------------------------------------------
 
@@ -170,16 +270,18 @@ Standard Async Execution Context and Executor
 
   class async_execution_context_t {
     // conforming to ExecutionContext concept
-    // ... and other implementation defined members
+
+    // Execution resource
+    using execution_resource_t = thread_execution_resource_t ;
+
+    template< class ... ExecutorProperties >
+      /* exposition only */ detail::executor_t< async_execution_context_t , ExecutorProperties... >
+    executor( ExecutorProperties ... p );``
   };
 
   class async_executor_t ; // implementation defined
 
   extern async_execution_context_t async_execution_context ;
-
-  template< class ... ExecutorProperties >
-    /* exposition only */ detail::executor_t< async_execution_context_t , ExecutorProperties... >
-  executor( async_execution_context_t & ec , ExecutorProperties ... p );
 
   template< class Function , class ... Args >
   future<std::result_of<std::decay_t<Function>(std::decay_t<Args>...)>>
@@ -196,14 +298,17 @@ Standard Async Execution Context and Executor
   through the with-executor ``std::async``
   and without-executor ``std::async``.
   Guaranteed to be initialized during or before the first use.
+  [Note: It is likely that
+  ``async_execution_context == program_thread_execution_context``.
+  --end note]
 
 
 | ``template< class ... ExecutorProperties >``
 |   ``/* exposition only */ detail::executor_t< async_execution_context_t , ExecutorProperties... >``
-| ``executor( async_execution_context_t & ec , ExecutorProperties ...p );``
+| ``async_execution_context_t::executor( ExecutorProperties ... p );``
 
   Returns:
-  An *executor* with *execution context* ``ec`` and
+  An *executor* with *this* *execution context* and
   execution properties ``p``.
   If ``p`` is empty, is ``std::launch::async``, or is ``std::launch::deferred``
   the *executor* type is ``async_executor_t``.
@@ -224,12 +329,12 @@ Standard Async Execution Context and Executor
   // Equivalent without- and with-executor async statements without launch policy
 
   auto f = std::async( []{ std::cout << "anonymous way\n"} );
-  auto f = std::async( std::executor( async_execution_context ) , []{ std::cout << "executor way\n"} );
+  auto f = std::async( std::async_execution_context.executor() , []{ std::cout << "executor way\n"} );
 
   // Equivalent without- and with-executor async statements with launch policy
 
   auto f = std::async( std::launch::deferred , []{ std::cout << "anonymous way\n"} );
-  auto f = std::async( std::executor( async_execution_context , std::launch::deferred ) , []{ std::cout << "executor way\n"} );
+  auto f = std::async( std::async_execution_context.executor( std::launch::deferred ) , []{ std::cout << "executor way\n"} );
 
 ..
 
@@ -250,11 +355,6 @@ Potential additions, request straw poll for each
   #. A mechanism for aborting callables that are executing.
 
   #. A mechanism for preventing further submissions.
-
-  #. An **execution resource** concept that identifies where execution agents
-     may run; e.g., HWLOC process/numa/cpu bitsets. 
-
-  #. An **execution architecture** trait.
 
   #. A preferred-locality (affinity) memory space allocator
 
