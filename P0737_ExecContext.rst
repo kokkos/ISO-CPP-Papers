@@ -29,6 +29,7 @@ D0737r0
       - Execution resource
       - Wait functions
       - Executor generator
+      - Execution context destruction behavior
 
     - Proposed thread execution resource
     - Proposed standard async execution context and executor
@@ -100,6 +101,8 @@ Minimal *Concept* Specification
 
   class ExecutionContext /* exposition only */ {
   public:
+    ~ExecutionContext();
+
     // Not copyable or moveable
     ExecutionContext( ExecutionContext const & ) = delete ;
     ExecutionContext( ExecutionContext && ) = delete ;
@@ -197,6 +200,16 @@ Let ``EC`` be an *ExecutionContext* type.
   *boost block* execution agents in the execution context, but may
   only poll to honor the time out.  --end note]
 
+
+``EC::~EC();``
+
+  Effects: Type dependent potential behaviors identifed by
+  to-be-defined *at destruction* traits.
+
+    - ``wait()`` for all incomplete work.
+    - Cancel work that is not executing and ``wait()`` for executing work.
+    - Cancel work that is not executing and abort executing work.
+    - Cancel work that is not executing and detach executing work.
 
 ------------------------------------------------------------------------------
 Thread Execution Resource
