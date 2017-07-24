@@ -24,9 +24,14 @@ D0737r0
   - Requested straw polls:
 
     - Proposed definition of ExecutionContext *concept*
-    - Proposed wait functions
+
+      - Non-copyable and non-moveable
+      - Execution resource
+      - Wait functions
+      - Executor generator
+
+    - Proposed thread execution resource
     - Proposed standard async execution context and executor
-    - Proposed interface for generating executors from execution context.
     - Interest in each of the suggested potential additions
       for initial insertion into Executors TS
 
@@ -132,6 +137,33 @@ Let ``EC`` be an *ExecutionContext* type.
   execution context to execute work.
   An execution architecture is denoted by the ``execution_resource_t`` type.
 
+| ``template< class ... ExecutorProperties >``
+|   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
+| ``EC::executor( ExecutorProperties ... p );``
+
+  Returns:
+  An executor with **\*this** execution context and
+  execution properties ``p`` when the execution context
+  supports these properties.
+  Otherwise ``void``.
+  [Note: The *detail::executor_t* is for exposition only denoting the
+  expectation that an implementation will use an implementation-defined
+  metafunction to determine the type of the returned executor. --end note]
+
+.. code-block:: c++
+
+  static_assert( ! is_same_v< void , decltype( ec.executor( p... ) )
+               , "Execution context cannot generate executor for given execution properties." );
+
+..
+
+  Remark:
+  A particular execution property may have semantic and interface implications,
+  such as whether application of the exector returns a future or not
+  (sometimes referred to as a two-way or one-way property).
+  A particular execution property may only be a performance hint.
+
+
 ``void EC::wait();``
 
   Requires:
@@ -165,23 +197,6 @@ Let ``EC`` be an *ExecutionContext* type.
   *boost block* execution agents in the execution context, but may
   only poll to honor the time out.  --end note]
 
-| ``template< class ... ExecutorProperties >``
-|   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
-| ``EC::executor( ExecutorProperties ... p );``
-
-  Returns:
-  An *executor* with **this** *execution context* and
-  execution properties ``p``.
-  [Note: The *detail::executor_t* is for exposition only denoting the
-  expectation that an implementation will use an implementation-defined
-  metafunction to determine the type of the returned executor. --end note]
-
-  Remark:
-  A particular execution property may have semantic and interface implications,
-  such as whether application of the exector returns a future or not
-  (sometimes referred to as a two-way or one-way property).
-  A particular execution property may only be a performance hint.
-
 
 ------------------------------------------------------------------------------
 Thread Execution Resource
@@ -196,7 +211,7 @@ cause two or more threads to make concurrent forward progress.
 [Note: A *CPU hyperthread* is a common example of 
 a thread execution unit. --end note]
 
-Hierarchical topology of thread execution resources.
+Hierarchical locality-topology of thread execution resources.
 
 .. code-block:: c++
 
@@ -207,9 +222,6 @@ Hierarchical topology of thread execution resources.
     int size() const noexcept ;
 
     thread_execution_resource_t operator[]( int i ) const noexcept ;
-
-  private:
-    std::vector<bool> _units ; // exposition only
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
@@ -236,8 +248,8 @@ Hierarchical topology of thread execution resources.
   Requires: ``0 <= i < size()``
 
   Returns: *Locality partition* of an execution resource.
-  Given thread execution resource ``E`` with
-  ``E.affinity()[k]`` set then there exists
+  Given thread execution resource ``E``
+  ``E.affinity()[k]`` set and ``0 < E.size()`` then there exists
   one-and-only-one value of ``i`` such that ``E[i].affinity()[k]``
   is set.
 
@@ -254,8 +266,7 @@ Hierarchical topology of thread execution resources.
   to execute threads. 
   [Note: For a Linux runtime calling
   ``progream_thread_execution_resource.affinity()``
-  is equivalent to calling
-  ``sched_getaffinity`` for the program's process id.
+  is equivalent to calling ``sched_getaffinity(getpid(),...)``.
   --end note]
 
 
@@ -308,7 +319,7 @@ Standard Async Execution Context and Executor
 | ``async_execution_context_t::executor( ExecutorProperties ... p );``
 
   Returns:
-  An *executor* with *this* *execution context* and
+  An *executor* with **\*this** *execution context* and
   execution properties ``p``.
   If ``p`` is empty, is ``std::launch::async``, or is ``std::launch::deferred``
   the *executor* type is ``async_executor_t``.
