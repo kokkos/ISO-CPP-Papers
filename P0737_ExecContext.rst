@@ -9,7 +9,7 @@ D0737r0 : Execution Context of Execution Agents
 :Author: H\. Carter Edwards, Sandia National Laboratories
 :Author: Daniel Sunderland, Sandia National Laboratories
 :Author: Michael Wong, Codeplay
-:Author: Thomas Rogers
+:Author: Thomas Rodgers
 :Author: tbd
 :Audience: SG1 Concurrency and Parallelism
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0737_ExecContext.rst
