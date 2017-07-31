@@ -6,7 +6,11 @@ D0737r0 : Execution Context of Execution Agents
 :Number: D0737r0
 :Date: 2017-xx-xx
 :Reply-to: hcedwar@sandia.gov
-:Author: H\. Carter Edwards
+:Author: H\. Carter Edwards, Sandia National Laboratories
+:Author: Daniel Sunderland, Sandia National Laboratories
+:Author: Michael Wong, Codeplay
+:Author: Thomas Rogers
+:Author: tbd
 :Audience: SG1 Concurrency and Parallelism
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0737_ExecContext.rst
 
@@ -53,7 +57,7 @@ These execution agents execute work, implemented by a callable,
 that is submitted to the execution context by an **executor**.
 One or more types of executors may submit work to the same
 execution context.
-Work to an execution context is **incomplete** until it 
+Work submitted to an execution context is **incomplete** until it 
 (1) is invoked and exits execution by return or exception 
 (2) its submission for execution is cancelled.
 
@@ -80,7 +84,7 @@ and the networking execution context include the following.
   #.  Limited to executing work, as opposed to providing unspecified services.
 
   #.  Is not a concrete base class from which other forms of execution contexts
-      are specialized ( ``system_context`` , ``io_context`` ) are derived.
+      are derived; *e.g.*, ``system_context`` , ``io_context`` .
 
   #.  An extensible one-to-many relationship between an execution context type
       and executor types that may submit work, as opposed to a particular
@@ -109,6 +113,10 @@ by a small fraction of hwloc capabilities.
 ------------------------------------------------------------------------------
 Minimal *Concept* Specification
 ------------------------------------------------------------------------------
+
+  The proposed *parallelism and concurrency execution context*
+  has minimal scope, with the intent to grow this scope as
+  consensus is achieved on `potential additions`_.
 
 .. code-block:: c++
 
@@ -151,14 +159,14 @@ Let ``EC`` be an *ExecutionContext* type.
 
   Returns: A descriptor of the execution resource(s) utilized by this
   execution context to execute work.
-  An execution architecture is denoted by the ``execution_resource_t`` type.
+  Execution architecture is identified by the ``execution_resource_t`` type.
 
 | ``template< class ... ExecutorProperties >``
 |   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
 | ``EC::executor( ExecutorProperties ... p );``
 
   Returns:
-  An executor with **\*this** execution context and
+  An executor with ``\*this`` execution context and
   execution properties ``p`` when the execution context
   supports these properties.
   Otherwise ``void``.
@@ -169,7 +177,7 @@ Let ``EC`` be an *ExecutionContext* type.
 .. code-block:: c++
 
   static_assert( ! is_same_v< void , decltype( ec.executor( p... ) )
-               , "Execution context cannot generate executor for given execution properties." );
+               , "Execution context cannot generate executor for given executor properties." );
 
 ..
 
@@ -223,6 +231,7 @@ Let ``EC`` be an *ExecutionContext* type.
     - Cancel work that is not executing and ``wait()`` for executing work.
     - Cancel work that is not executing and abort executing work.
 
+
 ------------------------------------------------------------------------------
 Thread Execution Resource
 ------------------------------------------------------------------------------
@@ -233,16 +242,23 @@ Threads can make *concurrent forward progress* only if they execute on
 different processing unit.
 Conversely, a single processing unit cannot
 cause two or more threads to make concurrent forward progress.
-[Note: A *CPU hyperthread* is a common example of 
-a processing unit. --end note]
+A *thread execution resource* identifies a specific set of processing units
+within the system hardware.
 
-A thread execution resource has an affinity with a set of processing units
-on which threads may execute.
-[Note: In a Linux runtime this is queried through ``sched_getaffinity``.
---end note]
+  [Note:
+  A *CPU hyperthread* is a common example of 
+  a processing unit.
+  In a Linux runtime a thread execution resource is defined by
+  a ``cpu_set_t`` object and is queried through the
+  ``sched_getaffinity`` function.
+  --end note]
+
+A *processing unit* or *thread execution resource* may be what
+was intended by the undefined term "thread contexts" in 33.3.2.6,
+"thread static members."
+
 A thread execution resource may have *locality partitions*
-of its set of processing units.
-
+for its set of processing units.
 
 .. code-block:: c++
 
@@ -265,13 +281,19 @@ of its set of processing units.
 
 ``static inline constexpr size_t procset_limit = /* implementation defined */ ;``
 
-  Upper bound for the number of processing units available in the
-  system hardware.
+  *Loose* upper bound for the number of processing units
+  available across system hardware supported by the library ABI.
 
 ``static size_t procset_size();``
 
   Returns:
-  Guaranteed upper bound: ``! procset()[k]`` when ``procset_size() <= k``.
+  *Tight* upper bound for the number of processing units available
+  for the system hardware in which the program is running.
+  ``! procset()[k]`` when ``procset_size() <= k``.
+
+  Remark: Has the same intent as 33.2.2.6
+  ``std::thread::hardware_concurrency();`` which returns
+  "The number of hardware thread contexts."
 
 ``procset_t const & procset() const noexcept ;``
 
@@ -299,24 +321,55 @@ of its set of processing units.
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
 
-  Thread execution resources in which the program is permitted
+  Thread execution resource in which the program is *permitted*
   to execute threads. 
-  [Note: For a Linux runtime calling
-  ``progream_thread_execution_resource.affinity()``
-  is equivalent to calling ``sched_getaffinity(getpid(),...)``.
-  --end note]
+  When a program executes it is common for the system runtime to restrict
+  that program to execute on a subset of all possible processing units
+  of the system hardware.
 
+    [Note:
+    For example, the linux ``taskset`` command can restrict a program to
+    a specified set of processing units and the program can use
+    ``sched_getaffinity(getpid(),...)`` to query that restriction.
+    The proposed ``program_thread_execution_resource.procset()``
+    is intended to provide the same query mechanism.
+    --end note]
 
 
 ------------------------------------------------------------------------------
-Standard Async Execution Context and Executor
+Motivation for Standard Async Execution Context and Executor
+------------------------------------------------------------------------------
+
+Require that the **33.6.9 Function template async** 
+have an equivalent execution context and executor based
+mechanism for launching asynchronous work.
+This exposes the currently hidden execution context and executor(s)
+which the underlying runtime has implemented to enable ``std::async``.
+
+.. code-block:: c++
+
+  // Equivalent without- and with-executor async statements without launch policy
+
+  auto f = std::async( []{ std::cout << "anonymous way\n"} );
+  auto f = std::async( std::async_execution_context.executor() , []{ std::cout << "executor way\n"} );
+
+  // Equivalent without- and with-executor async statements with launch policy
+
+  auto f = std::async( std::launch::deferred , []{ std::cout << "anonymous way\n"} );
+  auto f = std::async( std::async_execution_context.executor( std::launch::deferred ) , []{ std::cout << "executor way\n"} );
+
+..
+
+
+------------------------------------------------------------------------------
+Wording for Standard Async Execution Context and Executor
 ------------------------------------------------------------------------------
 
 .. code-block:: c++
 
   namespace std {
 
-  class async_execution_context_t {
+  struct async_execution_context_t {
     // conforming to ExecutionContext concept
 
     // Execution resource
@@ -339,7 +392,7 @@ Standard Async Execution Context and Executor
 
 ..
 
-``extern async_execution_context_t async_execution_context``
+``extern async_execution_context_t async_execution_context;``
 
   Global execution context object enabling the
   equivalent invocation of callables 
@@ -372,24 +425,19 @@ Standard Async Execution Context and Executor
   Equivalency is symmetric with respect to the non-executor ``std::async``
   functions.
 
-.. code-block:: c++
-
-  // Equivalent without- and with-executor async statements without launch policy
-
-  auto f = std::async( []{ std::cout << "anonymous way\n"} );
-  auto f = std::async( std::async_execution_context.executor() , []{ std::cout << "executor way\n"} );
-
-  // Equivalent without- and with-executor async statements with launch policy
-
-  auto f = std::async( std::launch::deferred , []{ std::cout << "anonymous way\n"} );
-  auto f = std::async( std::async_execution_context.executor( std::launch::deferred ) , []{ std::cout << "executor way\n"} );
-
-..
-
 
 ******************************************************************
 Potential additions, request straw poll for each
 ******************************************************************
+
+..  _`potential additions` :
+
+  #. Extension of *33 Thread support library* for querying the
+     processing unit on which an executing thread *recently* resided,
+     restrict a thread to execute on a specified thread execution resource,
+     query the thread execution resource restriction imposed on a thread.
+     Note: By definition a program's threads are restricted to
+     ``program_thread_execution_resouce()``.
 
   #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
@@ -397,15 +445,19 @@ Potential additions, request straw poll for each
   #. A mechanism to provide a callable that is invoked to consume
      exceptions thrown by callables that were submitted by a one-way executor.
 
+  #. A mechanism for preventing further submissions.
+     Related to "closed" in Concurrent Queue paper P0260.
+
   #. A mechanism for cancelling submitted callables that have not been invoked.
      Similar intent as Networking TS ``system_executor::stop()``.
 
   #. A mechanism for aborting callables that are executing.
-
-  #. A mechanism for preventing further submissions.
+     *Included for completeness, but not currently requested or recommended.*
 
   #. A preferred-locality (affinity) memory space allocator
 
   #. Proposal to revise Networking TS execution context to align with
      parallelism and concurrency execution context.
+
+.. Note: Boost "ASIO" library
 
