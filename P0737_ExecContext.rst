@@ -93,6 +93,19 @@ and the networking execution context include the following.
       versus the prescribed networking ``system_executor``.
 
 
+-----------------------------------------------------
+Hardware Locality (hwloc) software package
+-----------------------------------------------------
+
+The `hardware locality (hwloc) software package
+<https://www.open-mpi.org/projects/hwloc/>`_
+provides a portable interface for querying and managing
+hardware resources, including *processing units*
+on which threads execute.
+The proposed thread execution resource is motivated
+by a small fraction of hwloc capabilities.
+
+
 ------------------------------------------------------------------------------
 Minimal *Concept* Specification
 ------------------------------------------------------------------------------
@@ -110,7 +123,7 @@ Minimal *Concept* Specification
     ExecutionContext & operator = ( ExecutionContext && ) = delete ;
 
     // Execution resource
-    using execution_resource_t = /* implementatin defined */
+    using execution_resource_t = /* implementation defined */
 
     execution_resource_t const & execution_resource() const noexcept ;
 
@@ -214,61 +227,73 @@ Let ``EC`` be an *ExecutionContext* type.
 Thread Execution Resource
 ------------------------------------------------------------------------------
 
-A *thread* executes on a *thread execution unit* within an
+A *thread* executes on a *processing unit* (PU) within an
 *execution resource*.
-Threads can concurrently make forward progress only if they execute on
-different thread execution units.
-Conversely, a single thread execution unit cannot
+Threads can make *concurrent forward progress* only if they execute on
+different processing unit.
+Conversely, a single processing unit cannot
 cause two or more threads to make concurrent forward progress.
 [Note: A *CPU hyperthread* is a common example of 
-a thread execution unit. --end note]
+a processing unit. --end note]
 
-Hierarchical locality-topology of thread execution resources.
+A thread execution resource has an affinity with a set of processing units
+on which threads may execute.
+[Note: In a Linux runtime this is queried through ``sched_getaffinity``.
+--end note]
+A thread execution resource may have *locality partitions*
+of its set of processing units.
+
 
 .. code-block:: c++
 
   struct thread_execution_resource_t {
 
-    std::vector<bool> const & affinity() const noexcept ;
+    static inline constexpr size_t procset_limit = /* implementation defined */ ;
 
-    int size() const noexcept ;
+    static size_t procset_size();
 
-    thread_execution_resource_t operator[]( int i ) const noexcept ;
+    using procset_t = std::bitset< procset_limit > ;
+
+    procset_t const & procset() const noexcept ;
+
+    std::vector<thread_execution_resource_t> partition() const noexcept ;
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
 
 ..
 
-``std::vector<bool> const & affinity() const noexcept ;``
+``static inline constexpr size_t procset_limit = /* implementation defined */ ;``
+
+  Upper bound for the number of processing units available in the
+  system hardware.
+
+``static size_t procset_size();``
 
   Returns:
-  Bit vector *M* with size equal to the maximum number of
-  thread execution units available in the system.
-  Thread execution unit *k* is in the thread execution resource
+  Guaranteed upper bound: ``! procset()[k]`` when ``procset_size() <= k``.
+
+``procset_t const & procset() const noexcept ;``
+
+  Returns:
+  Processing unit *k* is in the thread execution resource
   if-and-only-if *M[k]* is set.
 
 
-``int size() const noexcept;``
+``std::vector<thread_execution_resource_t> partition() const noexcept ;``
 
   Returns:
-  Number of *locality partitions* of the execution resource.
-
-
-``thread_execution_resource_t operator[]( int i ) const noexcept ;``
-
-  Requires: ``0 <= i < size()``
-
-  Returns: *Locality partition* of an execution resource.
-  Given thread execution resource ``E``
-  ``E.affinity()[k]`` set and ``0 < E.size()`` then there exists
-  one-and-only-one value of ``i`` such that ``E[i].affinity()[k]``
-  is set.
+  Locality partitions of the execution resource.
+  Given thread execution resource ``E`` and
+  ``0 < E.partitions().size()`` then
+  ``E.procset()[k]`` is set then there exists
+  one-and-only-one locality partition ``i`` such that
+  ``E[i].procset()[k]``.
 
   Remark:
-  Thread execution units residing in the same locality partition
+  Processing units residing in the same locality partition
   are *more local* with respect to the memory system
-  than thread execution units in disjoint partitions.
+  than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
 
 
