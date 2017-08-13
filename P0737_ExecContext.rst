@@ -98,8 +98,11 @@ and the networking execution context include the following.
 
 
 -----------------------------------------------------
-Hardware Locality (hwloc) software package
+Partitioning and Affinity Background
 -----------------------------------------------------
+
+Hardware Locality (hwloc) Software Package
+------------------------------------------
 
 The `hardware locality (hwloc) software package
 <https://www.open-mpi.org/projects/hwloc/>`_
@@ -109,6 +112,22 @@ on which threads execute.
 The proposed thread execution resource is motivated
 by a small fraction of hwloc capabilities.
 
+SYCL for OpenCL and HSA Standards
+---------------------------------
+
+`SYCL <https://www.khronos.org/registry/SYCL/specs/sycl-1.2.pdf>` (based on
+`OpenCL <https://www.khronos.org/registry/OpenCL/specs/opencl-2.2.pdf>`)
+provides a C++ programming model for targeting a wide range of heterogeneous
+systems including multi-core CPUs, NUMA systems, embedded SoCs and discrete
+accelerators. `HSA
+<http://www.hsafoundation.com/standards/>` (Heterogeneous System Architecture)
+is a similar standard that provides a lower level, and lower overhead API and
+set of architecture requirements.
+
+Both of these standards represent the topology of a system with a hierarchy of
+ids that remain constant throughout the execution of a program. Both also allow
+users to partition the system topology to do fine-grained work execution. The
+extent of the partitioning depends on the platform.
 
 ------------------------------------------------------------------------------
 Minimal *Concept* Specification
