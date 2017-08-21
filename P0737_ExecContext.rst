@@ -344,7 +344,7 @@ for its set of processing units.
 
   Returns:
   Processing unit *k* is in the thread execution resource
-  if-and-only-if *M[k]* is set.
+  if-and-only-if *procset()[k]* is set.
 
 
 ``std::vector<thread_execution_resource_t> partition() const noexcept ;``
