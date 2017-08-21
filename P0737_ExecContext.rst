@@ -61,6 +61,11 @@ Work submitted to an execution context is **incomplete** until it
 (1) is invoked and exits execution by return or exception 
 (2) its submission for execution is cancelled.
 
+    Note: The *execution context* terminology used here
+    and in the Networking TS (N4656) deviate from the 
+    traditional *context of execution* usage that refers
+    to the state of a single executing callable; *e.g.*,
+    program counter, registers, stack frame.
 
 -----------------------------------------------------
 Contrast to Networking TS (N4656) Execution Context
@@ -251,34 +256,30 @@ Let ``EC`` be an *ExecutionContext* type.
     - Cancel work that is not executing and abort executing work.
 
 --------------------------------------------------------------------------------
-Execution Resource
+Execution Resource (see also P0761, Executors Design Document)
 --------------------------------------------------------------------------------
 
-An *execution resource* is an implementation defined, logical grouping of one or
-more *core execution resources*, with a relative affinity between each resource.
+An *execution resource* is an implementation defined
+hardware and/or software facility capable of executing a
+callable function object.
+Different resources may offer a broad array of functionality
+and semantics and exhibit different performance characteristics
+of interest to the performance-conscious programmer.
+For example, an implementation might expose different processor cores,
+with potentially non-uniform access to memory, as separate resources
+to enable programmers to reason about locality.
 
---------------------------------------------------------------------------------
-Core Execution Resource
---------------------------------------------------------------------------------
-    
-A *core execution resource* is an implementation defined, logical grouping of one
-or more *thread execution resource*, with a relative affinity between each
-resource. A *thread execution resource* also defines forward progress guarantees
-that are provided between each *thread execution resource*.
+An execution resource can range from SIMD vector units accessible
+in a single thread to an entire runtime managing a large collection of threads.
 
 --------------------------------------------------------------------------------
 Thread Execution Resource
 --------------------------------------------------------------------------------
     
-A *core execution resource* is one or more *threads of execution* (either
-physical or logical) capable of executing work. A *thread execution resource*
-also defines forward progress guarantees between each *thread of
-execution* within in.
-
 A *thread of execution* executes on a *processing unit* (PU) within an
 *execution resource*.
-*Threads of execution* can make *concurrent forward progress* only if they execute on
-different processing unit.
+*Threads of execution* can make *concurrent forward progress*
+only if they execute on different processing unit.
 Conversely, a single processing unit cannot
 cause two or more *threads of execution* to make concurrent forward progress.
 A *thread execution resource* identifies a specific set of processing units
@@ -311,17 +312,22 @@ for its set of processing units.
 
     procset_t const & procset() const noexcept ;
 
-    std::vector<thread_execution_resource_t> partition() const noexcept ;
+    std::vector<thread_execution_resource_t[]> partition() const noexcept ;
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
 
 ..
 
+
 ``static inline constexpr size_t procset_limit = /* implementation defined */ ;``
 
   *Loose* upper bound for the number of processing units
   available across system hardware supported by the library ABI.
+
+  Note: The preferred type for ``procset_t`` is a ``bitset``
+  conformal type with runtime defined length to enable an ABI
+  without the ``procset_limit`` *loose* upper bound.
 
 ``static size_t procset_size();``
 
@@ -356,6 +362,10 @@ for its set of processing units.
   are *more local* with respect to the memory system
   than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
+
+  Note:
+  Prefer ``unique_ptr<thread_execution_resource_t[]>`` ;
+  however, this array type is missing a ``size()`` observer.
 
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
@@ -466,8 +476,12 @@ Wording for Standard Async Execution Context and Executor
 
 
 ******************************************************************
-Potential additions, request straw poll for each
+Appendices
 ******************************************************************
+
+------------------------------------------------------------------------------
+Potential Additions: Request straw poll for each
+------------------------------------------------------------------------------
 
 ..  _`potential additions` :
 
@@ -499,4 +513,13 @@ Potential additions, request straw poll for each
      parallelism and concurrency execution context.
 
 .. Note: Boost "ASIO" library
+
+------------------------------------------------------------------------------
+Related preferences requiring separate papers
+------------------------------------------------------------------------------
+
+  #. ``std::bitset<>`` with runtime length when length is omitted.
+
+  #. ``std::unique_ptr<T[],D>::size()`` method to query runtime array length.
+
 
