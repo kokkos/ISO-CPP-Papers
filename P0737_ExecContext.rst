@@ -250,24 +250,44 @@ Let ``EC`` be an *ExecutionContext* type.
     - Cancel work that is not executing and ``wait()`` for executing work.
     - Cancel work that is not executing and abort executing work.
 
+--------------------------------------------------------------------------------
+Execution Resource
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------
+An *execution resource* is an implementation defined, logical grouping of one or
+more *core execution resources*, with a relative affinity between each resource.
+
+--------------------------------------------------------------------------------
+Core Execution Resource
+--------------------------------------------------------------------------------
+    
+A *core execution resource* is an implementation defined, logical grouping of one
+or more *thread execution resource*, with a relative affinity between each
+resource. A *thread execution resource* also defines forward progress guarantees
+that are provided between each *thread execution resource*.
+
+--------------------------------------------------------------------------------
 Thread Execution Resource
-------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+    
+A *core execution resource* is one or more *threads of execution* (either
+physical or logical) capable of executing work. A *thread execution resource*
+also defines forward progress guarantees between each *thread of
+execution* within in.
 
-A *thread* executes on a *processing unit* (PU) within an
+A *thread of execution* executes on a *processing unit* (PU) within an
 *execution resource*.
-Threads can make *concurrent forward progress* only if they execute on
+*Threads of execution* can make *concurrent forward progress* only if they execute on
 different processing unit.
 Conversely, a single processing unit cannot
-cause two or more threads to make concurrent forward progress.
+cause two or more *threads of execution* to make concurrent forward progress.
 A *thread execution resource* identifies a specific set of processing units
 within the system hardware.
 
   [Note:
   A *CPU hyperthread* is a common example of 
   a processing unit.
-  In a Linux runtime a thread execution resource is defined by
+  In a Linux runtime a *thread execution resource* is defined by
   a ``cpu_set_t`` object and is queried through the
   ``sched_getaffinity`` function.
   --end note]
@@ -276,7 +296,7 @@ A *processing unit* or *thread execution resource* may be what
 was intended by the undefined term "thread contexts" in 33.3.2.6,
 "thread static members."
 
-A thread execution resource may have *locality partitions*
+A *thread execution resource* may have *locality partitions*
 for its set of processing units.
 
 .. code-block:: c++
