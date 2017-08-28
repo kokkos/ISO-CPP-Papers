@@ -37,7 +37,7 @@ D0737r0
 
     - Proposed thread execution resource
     - Proposed standard async execution context and executor
-    - Interest in each of the suggested potential additions
+    - Interest in each of the suggested `potential additions`_
       for initial insertion into Executors TS
 
 ******************************************************************
@@ -120,12 +120,12 @@ by a small fraction of hwloc capabilities.
 SYCL for OpenCL and HSA Standards
 ---------------------------------
 
-`SYCL <https://www.khronos.org/registry/SYCL/specs/sycl-1.2.pdf>` (based on
-`OpenCL <https://www.khronos.org/registry/OpenCL/specs/opencl-2.2.pdf>`)
+`SYCL <https://www.khronos.org/registry/SYCL/specs/sycl-1.2.pdf>`_ (based on
+`OpenCL <https://www.khronos.org/registry/OpenCL/specs/opencl-2.2.pdf>`_)
 provides a C++ programming model for targeting a wide range of heterogeneous
 systems including multi-core CPUs, NUMA systems, embedded SoCs and discrete
-accelerators. `HSA
-<http://www.hsafoundation.com/standards/>` (Heterogeneous System Architecture)
+accelerators.
+`HSA (Heterogeneous System Architecture) <http://www.hsafoundation.com/standards/>`_
 is a similar standard that provides a lower level, and lower overhead API and
 set of architecture requirements.
 
@@ -312,7 +312,7 @@ for its set of processing units.
 
     procset_t const & procset() const noexcept ;
 
-    std::vector<thread_execution_resource_t[]> partition() const noexcept ;
+    std::vector<thread_execution_resource_t> partitioning() const noexcept ;
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
@@ -347,12 +347,12 @@ for its set of processing units.
   if-and-only-if *procset()[k]* is set.
 
 
-``std::vector<thread_execution_resource_t> partition() const noexcept ;``
+``std::vector<thread_execution_resource_t> partitioning() const noexcept ;``
 
   Returns:
-  Locality partitions of the execution resource.
+  Locality partitioning of the execution resource.
   Given thread execution resource ``E`` and
-  ``0 < E.partitions().size()`` then
+  ``0 < E.partitioning().size()`` then
   ``E.procset()[k]`` is set then there exists
   one-and-only-one locality partition ``i`` such that
   ``E[i].procset()[k]``.
@@ -379,7 +379,7 @@ for its set of processing units.
     [Note:
     For example, the linux ``taskset`` command can restrict a program to
     a specified set of processing units and the program can use
-    ``sched_getaffinity(getpid(),...)`` to query that restriction.
+    ``sched_getaffinity(0,...)`` to query that restriction.
     The proposed ``program_thread_execution_resource.procset()``
     is intended to provide the same query mechanism.
     --end note]
@@ -491,6 +491,16 @@ Potential Additions: Request straw poll for each
      query the thread execution resource restriction imposed on a thread.
      Note: By definition a program's threads are restricted to
      ``program_thread_execution_resouce()``.
+
+  #. Add to `thread_execution_resource_t` a hardware architecture trait;
+     e.g., the **hwloc** trait for *socket*, *numa*, and *core*.
+
+  #. Current `thread_execution_resource_t` assumes static set of
+     processing units with static hierarchical partitioning topology.
+     A process' set of processing units and associated topology could be
+     dynamic such that an executing process could adapt to changes;
+     e.g., cores could dynamically go off-line and previously off-line
+     cores could come back on-line.
 
   #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
