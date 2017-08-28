@@ -539,6 +539,9 @@ Related preferences requiring separate papers
 ------------------------------------------------------------------------------
 
   #. ``std::bitset<>`` with runtime length when length is omitted.
+     Similar to the proposed ``dynamic_bitset`` of
+     `N2050 <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2050>`_ ;
+     however, not resizeable after construction.
 
   #. ``std::unique_ptr<T[],D>::size()`` method to query runtime array length.
 
