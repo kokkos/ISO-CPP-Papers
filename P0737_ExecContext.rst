@@ -146,6 +146,9 @@ Minimal *Concept* Specification
 
   class ExecutionContext /* exposition only */ {
   public:
+
+    using at_destruction = /* implementation defined */ ;
+
     ~ExecutionContext();
 
     // Not copyable or moveable
@@ -155,7 +158,7 @@ Minimal *Concept* Specification
     ExecutionContext & operator = ( ExecutionContext && ) = delete ;
 
     // Execution resource
-    using execution_resource_t = /* implementation defined */
+    using execution_resource_t = /* implementation defined */ ;
 
     execution_resource_t const & execution_resource() const noexcept ;
 
@@ -249,10 +252,17 @@ Let ``EC`` be an *ExecutionContext* type.
 ``EC::~EC();``
 
   Effects: Type dependent potential behaviors identified by
-  to-be-defined *at destruction* traits.
+  to-be-defined ``at_destruction`` trait.
 
-    - ``wait()`` for all incomplete work.
-    - Cancel work that is not executing and ``wait()`` for executing work.
+
+``EC::at_destruction = /* implementation defined */ ;``
+
+  Trait specifying behavoir of the destructor with respect to
+  incomplete work.  Possibilities:
+
+    - Reject submission of new work.
+    - Wait for all incomplete work to complete.
+    - Cancel work that is not executing and wait for executing work.
     - Cancel work that is not executing and abort executing work.
 
 --------------------------------------------------------------------------------
