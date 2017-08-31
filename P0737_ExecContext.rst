@@ -316,13 +316,15 @@ for its set of processing units.
 
     static inline constexpr size_t procset_limit = /* implementation defined */ ;
 
-    static size_t procset_size();
-
     using procset_t = std::bitset< procset_limit > ;
+
+    static size_t procset_size();
 
     procset_t const & procset() const noexcept ;
 
-    std::vector<thread_execution_resource_t> partitioning() const noexcept ;
+    size_t size() const noexcept ;
+    
+    const thread_execution_resource_t & operator[]( size_t i ) const noexcept ;
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
@@ -356,13 +358,17 @@ for its set of processing units.
   Processing unit *k* is in the thread execution resource
   if-and-only-if *procset()[k]* is set.
 
+``size_t size() const noexcept ;``
 
-``std::vector<thread_execution_resource_t> partitioning() const noexcept ;``
+  Returns:
+  Number of locality partitionings of the execution resource.
+  
+``const thread_execution_resource_t & operator[](size_t i) const noexcept ;``
 
   Returns:
   Locality partitioning of the execution resource.
   Given thread execution resource ``E`` and
-  ``0 < E.partitioning().size()`` then
+  ``0 < E..size()`` then
   ``E.procset()[k]`` is set then there exists
   one-and-only-one locality partition ``i`` such that
   ``E[i].procset()[k]``.
@@ -372,11 +378,6 @@ for its set of processing units.
   are *more local* with respect to the memory system
   than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
-
-  Note:
-  Prefer ``unique_ptr<thread_execution_resource_t[]>`` ;
-  however, this array type is missing a ``size()`` observer.
-
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
 
