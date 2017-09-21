@@ -322,11 +322,12 @@ for its set of processing units.
 
     procset_t const & procset() const noexcept ;
 
-    size_t size() const noexcept ;
+    size_t partition_size() const noexcept ;
     
-    const thread_execution_resource_t & operator[]( size_t i ) const noexcept ;
+    const thread_execution_resource_t & partition( size_t i ) const noexcept ;
   };
 
+  extern thread_execution_resource_t system_thread_execution_resource ;
   extern thread_execution_resource_t program_thread_execution_resource ;
 
 ..
@@ -358,26 +359,37 @@ for its set of processing units.
   Processing unit *k* is in the thread execution resource
   if-and-only-if *procset()[k]* is set.
 
-``size_t size() const noexcept ;``
+``size_t partition_size() const noexcept ;``
 
   Returns:
   Number of locality partitionings of the execution resource.
   
-``const thread_execution_resource_t & operator[](size_t i) const noexcept ;``
+``const thread_execution_resource_t & partition(size_t i) const noexcept ;``
+
+  Requires: ``i < partition_size()``.
 
   Returns:
   Locality partitioning of the execution resource.
   Given thread execution resource ``E`` and
-  ``0 < E..size()`` then
+  ``0 < E.partition_size()`` then
   ``E.procset()[k]`` is set then there exists
   one-and-only-one locality partition ``i`` such that
-  ``E[i].procset()[k]``.
+  ``E.partition(i).procset()[k]``.
 
   Remark:
   Processing units residing in the same locality partition
   are *more local* with respect to the memory system
   than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
+
+``extern thread_execution_resource_t system_thread_execution_resource ;``
+
+  Thread execution resource of the system in which the program
+  is executing.
+
+  Requires:
+    ``system_thread_execution_resource.procset().count() ==
+    thread_execution_resource_t::procset_size()``
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
 
@@ -496,6 +508,16 @@ Potential Additions: Request straw poll for each
 
 ..  _`potential additions` :
 
+Straw polls requested for each of the following potential additions.
+
+  - Strongly-favor = I must have this in next revision of this paper.
+  - Weakly-favor = I'd like to see this in a future paper, or perhaps the next revision.
+  - Neutral = *whatever*
+  - Weakly-against = I don't want to see this in the next revision of this paper, but I am willing to look at it in a future paper.
+  - Strongly-against = I never want to see this in any paper.
+
+
+
   #. Extension of *33 Thread support library* for querying the
      processing unit on which an executing thread *recently* resided,
      restrict a thread to execute on a specified thread execution resource,
@@ -505,13 +527,6 @@ Potential Additions: Request straw poll for each
 
   #. Add to `thread_execution_resource_t` a hardware architecture trait;
      e.g., the **hwloc** trait for *socket*, *numa*, and *core*.
-
-  #. Current `thread_execution_resource_t` assumes static set of
-     processing units with static hierarchical partitioning topology.
-     A process' set of processing units and associated topology could be
-     dynamic such that an executing process could adapt to changes;
-     e.g., cores could dynamically go off-line and previously off-line
-     cores could come back on-line.
 
   #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
@@ -526,12 +541,24 @@ Potential Additions: Request straw poll for each
      Similar intent as Networking TS ``system_executor::stop()``.
 
   #. A mechanism for aborting callables that are executing.
-     *Included for completeness, but not currently requested or recommended.*
+     *Included for completeness, the authors are strongly-against.*
 
   #. A preferred-locality (affinity) memory space allocator
 
   #. Proposal to revise Networking TS execution context to align with
      parallelism and concurrency execution context.
+
+  #. Current `thread_execution_resource_t` assumes static set of
+     processing units with static hierarchical partitioning topology.
+     A process' set of processing units and associated topology could be
+     dynamic such that an executing process could adapt to changes;
+     e.g., cores could dynamically go off-line and previously off-line
+     cores could come back on-line.
+     A dynamic set of processing units and dynamic hierarchical
+     partitioning topology would require a complete redesign to address
+     race conditions between querying and changing the execution resource.
+     *Authors need to see a performant runtime that handles such dynamicity
+     before considering such a change.*
 
 .. Note: Boost "ASIO" library
 
@@ -543,7 +570,5 @@ Related preferences requiring separate papers
      Similar to the proposed ``dynamic_bitset`` of
      `N2050 <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2050>`_ ;
      however, not resizeable after construction.
-
-  #. ``std::unique_ptr<T[],D>::size()`` method to query runtime array length.
 
 
