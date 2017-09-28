@@ -36,6 +36,7 @@ D0737r0
       - Execution context destruction behavior
 
     - Proposed thread execution resource
+    - Proposed this_thread query of thread execution resource
     - Proposed standard async execution context and executor
     - Interest in each of the suggested `potential additions`_
       for initial insertion into Executors TS
@@ -289,11 +290,11 @@ Thread Execution Resource
 A *thread of execution* executes on a *processing unit* (PU) within an
 *execution resource*.
 *Threads of execution* can make *concurrent forward progress*
-only if they execute on different processing unit.
+only if they execute on different processing units.
 Conversely, a single processing unit cannot
 cause two or more *threads of execution* to make concurrent forward progress.
-A *thread execution resource* identifies a specific set of processing units
-within the system hardware.
+A *thread execution resource* is associated with a
+specific set of processing units within the system hardware.
 
   [Note:
   A *CPU hyperthread* is a common example of 
@@ -308,56 +309,37 @@ was intended by the undefined term "thread contexts" in 33.3.2.6,
 "thread static members."
 
 A *thread execution resource* may have *locality partitions*
-for its set of processing units.
+for its associated set of processing units.
+For example, hyperthreads sharing the same CPU core are more local
+to one another than to a hyperthreads on different core.
 
 .. code-block:: c++
 
   struct thread_execution_resource_t {
 
-    static inline constexpr size_t procset_limit = /* implementation defined */ ;
-
-    using procset_t = std::bitset< procset_limit > ;
-
-    static size_t procset_size();
-
-    procset_t const & procset() const noexcept ;
+    size_t concurrency() const noexcept ;
 
     size_t partition_size() const noexcept ;
     
     const thread_execution_resource_t & partition( size_t i ) const noexcept ;
+
+    const thread_execution_resource_t & member_of() const noexcept ;
   };
 
-  extern thread_execution_resource_t system_thread_execution_resource ;
   extern thread_execution_resource_t program_thread_execution_resource ;
 
 ..
 
-
-``static inline constexpr size_t procset_limit = /* implementation defined */ ;``
-
-  *Loose* upper bound for the number of processing units
-  available across system hardware supported by the library ABI.
-
-  Note: The preferred type for ``procset_t`` is a ``bitset``
-  conformal type with runtime defined length to enable an ABI
-  without the ``procset_limit`` *loose* upper bound.
-
-``static size_t procset_size();``
+``size_t concurrency();``
 
   Returns:
-  *Tight* upper bound for the number of processing units available
-  for the system hardware in which the program is running.
-  ``! procset()[k]`` when ``procset_size() <= k``.
+  This execution resource's potential for concurrent forward progress;
+  *i.e.*, the number of processing units
+  associated with this execution resource.
 
-  Remark: Has the same intent as 33.2.2.6
+  Remark: Has similar intent as 33.2.2.6
   ``std::thread::hardware_concurrency();`` which returns
   "The number of hardware thread contexts."
-
-``procset_t const & procset() const noexcept ;``
-
-  Returns:
-  Processing unit *k* is in the thread execution resource
-  if-and-only-if *procset()[k]* is set.
 
 ``size_t partition_size() const noexcept ;``
 
@@ -369,12 +351,21 @@ for its set of processing units.
   Requires: ``i < partition_size()``.
 
   Returns:
-  Locality partitioning of the execution resource.
-  Given thread execution resource ``E`` and
-  ``0 < E.partition_size()`` then
-  ``E.procset()[k]`` is set then there exists
-  one-and-only-one locality partition ``i`` such that
-  ``E.partition(i).procset()[k]``.
+  A locality partition of the execution resource.
+  Locality partitions are associated disjoint subsets of the
+  thread execution resource's processing units.
+
+.. code-block:: c++
+
+  void verify_concurrency( thread_execution_resource_t const & E )
+  {
+    size_t sum = 0 ;
+    for ( size_t i = 0 ; i < E.partition_size() ; ++i )
+      sum += E.partition(i).concurrency();
+    assert( E.partition_size() == 0 || E.concurrency() == sum );
+  }
+
+..
 
   Remark:
   Processing units residing in the same locality partition
@@ -382,14 +373,14 @@ for its set of processing units.
   than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
 
-``extern thread_execution_resource_t system_thread_execution_resource ;``
+``const thread_execution_resource_t & member_of() const noexcept ;``
 
-  Thread execution resource of the system in which the program
-  is executing.
+  Returns:
+  If thread execution resource ``M`` is a member of a
+  thread execution resource ``E`` partitioning then returns ``E``,
+  ``M == E.partition(i)`` for some ``i`` then ``E == M.member_of()``.
+  Otherwise returns ``M``.
 
-  Requires:
-    ``system_thread_execution_resource.procset().count() ==
-    thread_execution_resource_t::procset_size()``
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
 
@@ -401,12 +392,54 @@ for its set of processing units.
 
     [Note:
     For example, the linux ``taskset`` command can restrict a program to
-    a specified set of processing units and the program can use
+    a specified set of processing units.  The program can use
     ``sched_getaffinity(0,...)`` to query that restriction.
-    The proposed ``program_thread_execution_resource.procset()``
-    is intended to provide the same query mechanism.
+    The proposed ``program_thread_execution_resource``
+    is intended to provide the same information.
     --end note]
 
+  Requires:
+  ``program_thread_execution_resource.member_of() ==
+  program_thread_execution_resource`` and all ``member_of()``
+  recursions terminate with ``program_thread_execution_resource``.
+
+  Remark:
+  A high-quality implementation will provide a hierarchical
+  locality partitioning that terminates when members have
+  ``concurrency() == 1``.
+
+--------------------------------------------------------------------------------
+This Thread Execution Resource
+--------------------------------------------------------------------------------
+
+Add to **33.3.3 Namespace this_thread**
+
+.. code-block:: c++
+
+  namespace std::this_thread {
+
+    const thread_execution_resource_t & get_resource();
+
+  }
+
+..
+
+
+``const thread_execution_resource_t & this_thread::get_resource()``
+
+  Returns:
+  An execution resource on which this thread was executing during the
+  call to ``get_resource``.
+
+  Remark:
+  A thread may migrate between thread execution resources.
+  As such the ``get_resource`` returns one of those resources on
+  which the thread was executing during the call to ``get_resource``.
+  There is no guarantee that this thread is executing on the
+  returned thread execution resource before or after the
+  call to ``get_resource``.
+  A high-quality implementation will return an execution resource
+  with ``concurrency() == 1``.
 
 ------------------------------------------------------------------------------
 Motivation for Standard Async Execution Context and Executor
@@ -518,15 +551,13 @@ Straw polls requested for each of the following potential additions.
 
 
 
-  #. Extension of *33 Thread support library* for querying the
-     processing unit on which an executing thread *recently* resided,
-     restrict a thread to execute on a specified thread execution resource,
-     query the thread execution resource restriction imposed on a thread.
-     Note: By definition a program's threads are restricted to
-     ``program_thread_execution_resouce()``.
-
   #. Add to `thread_execution_resource_t` a hardware architecture trait;
      e.g., the **hwloc** trait for *socket*, *numa*, and *core*.
+
+  #. A mechanism to bind the execution of a ``std::thread`` to
+     a specified ``thread_execution_resource``.
+     Note that by definition all ``std::thread`` are bound to
+     ``program_thread_execution_resource``.
 
   #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
@@ -561,14 +592,5 @@ Straw polls requested for each of the following potential additions.
      before considering such a change.*
 
 .. Note: Boost "ASIO" library
-
-------------------------------------------------------------------------------
-Related preferences requiring separate papers
-------------------------------------------------------------------------------
-
-  #. ``std::bitset<>`` with runtime length when length is omitted.
-     Similar to the proposed ``dynamic_bitset`` of
-     `N2050 <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2050>`_ ;
-     however, not resizeable after construction.
 
 
