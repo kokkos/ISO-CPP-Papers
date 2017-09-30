@@ -41,6 +41,20 @@ D0737r0
     - Interest in each of the suggested `potential additions`_
       for initial insertion into Executors TS
 
+
+******************************************************************
+The Problem
+******************************************************************
+Current Executor proposal does not define a specific concrete context. An Execution Context is meant to mediate between Execution agents, the executor, and the execution resources. More specifically, an execution context is responsible for managing an execution resource. 
+An execution context also provides an executor for executing work on it’s managed execution resource. Finally, an execution context manages a number of light-weight execution agents.
+
+The Executor proposal currently does not specifically define a concrete execution context, other then provide a static threads pool as a basic example. As the executor proposal is a joint proposal between several industry representative- parallel and vectorized algorithms, multi-threaded execution, heterogeneous and distributed execution, and network execution. For some areas, a concrete execution context is necessary because it could be used to manage a stream or queues, such as in heterogeneous or distributed computing. I
+In other domains, such as parallel aand vectorized algorithms, it may remain an abstract concept. 
+
+Another area of interest that can be supported by Context is the querying of the memory affinity status of the system. This is important as a concept to enable future support for affinity (see the Affinity paper). This is an area that requires solution.
+
+This paper focuses on those domains where a concrete Execution Context is extermemly important while also proposing a mechanism for defining the system affinity.
+
 ******************************************************************
 Proposal
 ******************************************************************
