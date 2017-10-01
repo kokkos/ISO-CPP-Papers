@@ -48,12 +48,14 @@ The Problem
 Current Executor proposal does not define a specific concrete context. An Execution Context is meant to mediate between Execution agents, the executor, and the execution resources. More specifically, an execution context is responsible for managing an execution resource. 
 An execution context also provides an executor for executing work on it’s managed execution resource. Finally, an execution context manages a number of light-weight execution agents.
 
-The Executor proposal currently does not specifically define a concrete execution context, other then provide a static threads pool as a basic example. As the executor proposal is a joint proposal between several industry representative- parallel and vectorized algorithms, multi-threaded execution, heterogeneous and distributed execution, and network execution. For some areas, a concrete execution context is necessary because it could be used to manage a stream or queues, such as in heterogeneous or distributed computing.
+The Executor proposal currently does not specifically define a concrete execution context, other then providing a static thread pool as a basic example. As the executor proposal is a joint proposal between several industry representatives - parallel and vectorized algorithms, multi-threaded execution, heterogeneous and distributed execution, and network execution, it was deemed not necessary to provdie a specific concrete execution context. For some areas, a concrete execution context is necessary because it could be used to manage a stream or queue of command kernels, such as in heterogeneous or distributed computing.
 In other domains, such as parallel aand vectorized algorithms, it may remain an abstract concept. 
 
-Another area of interest that can be supported by Context is the querying of the memory affinity status of the system. This is important as a concept to enable future support for affinity (see the Affinity paper). This is an area that requires solution.
 
 This paper focuses on those domains where a concrete Execution Context is extermemly important while also proposing a mechanism for defining the system affinity.
+
+Another area of interest that can be supported by Context is the querying of the memory affinity status of the system. This is important as a concept to enable future support for affinity (see the Affinity paper). This is an area that requires solution and this papers outlines one such direction.
+
 
 ******************************************************************
 Proposal
@@ -72,8 +74,8 @@ These execution agents execute work, implemented by a callable,
 that is submitted to the execution context by an **executor**.
 One or more types of executors may submit work to the same
 execution context.
-Work submitted to an execution context is **incomplete** until it 
-(1) is invoked and exits execution by return or exception 
+Work submitted to an execution context is **incomplete** until it is
+(1) invoked and exits execution by return or exception or 
 (2) its submission for execution is cancelled.
 
     Note: The *execution context* terminology used here
@@ -98,21 +100,21 @@ This executor type has numerous work submission member functions
 each with particular semantics.
 
 
-Differences between the proposed parallelism and concurrency execution context
+Differences between our proposed parallelism and concurrency execution context
 and the networking execution context include the following.
 
-  #.  Limited to executing work, as opposed to providing unspecified services.
+  #.  Networking context is Limited to executing work, as opposed to providing unspecified services.
 
-  #.  Is not a concrete base class from which other forms of execution contexts
+  #.  Networking context is not a concrete base class from which other forms of execution contexts
       are derived; *e.g.*, ``system_context`` , ``io_context`` .
 
-  #.  An extensible one-to-many relationship between an execution context type
+  #.  Our context is an extensible one-to-many relationship between an execution context type
       and executor types that may submit work, as opposed to a particular
       executor type with specific work submission functions.
 
-  #.  The proposed ``async_execution_context`` could be viewed as having
+  #.  Our proposed ``async_execution_context`` could be viewed as having
       similar intent as the networking ``system_context``.
-      The significant difference of is interchangeability with
+      The significant difference is interchangeability with
       ``std::async`` usage and extensibility to other executors
       versus the prescribed networking ``system_executor``.
 
