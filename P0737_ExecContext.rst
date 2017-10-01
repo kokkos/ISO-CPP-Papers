@@ -121,7 +121,7 @@ and the networking execution context include the following.
 
 
 -----------------------------------------------------
-Partitioning and Affinity Background
+Partitioning and Affinity State of the Art
 -----------------------------------------------------
 
 Hardware Locality (hwloc) Software Package
@@ -151,6 +151,21 @@ Both of these standards represent the topology of a system with a hierarchy of
 ids that remain constant throughout the execution of a program. Both also allow
 users to partition the system topology to do fine-grained work execution. The
 extent of the partitioning depends on the platform.
+
+In contrast, OpenMP requires an external environment variable set by the user.
+They use the idea of an abstract Place as defined by the user over all threads, cores, and sockets.
+In this way, it enable the user to secify the granularity of the topology, and then further enable
+defining the desired affinity for being on the same Place as master thread, or scatter out in a round robin fashion, 
+as well as compacting it around the Master. It can also define for each nested parallelism level,
+because the work may change or become irregular during runtime. 
+
+This design, while flexible is not possible for C++ Affinty. C++ cannot use the environment variable for input configuration.
+The advantage of the OpenMP design is its use of abstract places which makes it flexible for some future core configuration
+but it means the programmer has to decide whether to describe the places 
+in terms of threads, cores, or sockets which still requires some actual hardware knowledge. 
+Still, the fundamental of its implementation has shown it is doable on most architectures. In that respect, C++ implementation
+would only need to define the interface, but the underlying mechanism should be similar.
+Since its addition in OpenMP 3, this feature has a great deal of experience from HPC and demonstartes implementability.
 
 ------------------------------------------------------------------------------
 Minimal *Concept* Specification
