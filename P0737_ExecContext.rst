@@ -318,7 +318,7 @@ Let ``EC`` be an *ExecutionContext* type.
       is currently executing and all work that has not yet started executing.
       Any subsequent work which is submitted will be rejected.
     - If ``stop_on_destruction`` is true the ``EC`` will wait for all currently
-      executing work and cancel work which has not yet started executing. Any
+      executing work and abort work which has not yet started executing. Any
       subsequent work which is submitted will be rejected.
     - If ``wait_on_destruction`` is true the ``EC`` will wait for all incomplete
       work to be executed. If ``wait_on_outstanding_work_t`` is true the ``EC``
