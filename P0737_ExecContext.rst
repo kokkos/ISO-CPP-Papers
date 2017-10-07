@@ -10,7 +10,7 @@ D0737r0 : Execution Context of Execution Agents
 :Author: Daniel Sunderland, Sandia National Laboratories
 :Author: Michael Wong, Codeplay
 :Author: Thomas Rodgers
-:Author: tbd
+:Author: Gordon Brown, Codeplay
 :Audience: SG1 Concurrency and Parallelism
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0737_ExecContext.rst
 
@@ -36,9 +36,27 @@ D0737r0
       - Execution context destruction behavior
 
     - Proposed thread execution resource
+    - Proposed this_thread query of thread execution resource
     - Proposed standard async execution context and executor
-    - Interest in each of the suggested potential additions
+    - Interest in each of the suggested `potential additions`_
       for initial insertion into Executors TS
+
+
+******************************************************************
+The Problem
+******************************************************************
+
+Current Executor proposal does not define a specific concrete context. An Execution Context is meant to mediate between Execution agents, the executor, and the execution resources. More specifically, an execution context is responsible for managing an execution resource. 
+An execution context also provides an executor for executing work on it’s managed execution resource. Finally, an execution context manages a number of light-weight execution agents.
+
+The Executor proposal currently does not specifically define a concrete execution context, other then providing a static thread pool as a basic example. As the executor proposal is a joint proposal between several industry representatives - parallel and vectorized algorithms, multi-threaded execution, heterogeneous and distributed execution, and network execution.  It was not deemed necessary to provide a specific concrete execution context. For some areas, a concrete execution context is necessary because it could be used to manage a stream or queue of command kernels, such as in heterogeneous or distributed computing.
+In other domains, such as parallel aand vectorized algorithms, it may remain an abstract concept. 
+
+
+This paper focuses on those domains where a concrete Execution Context is extermemly important while also proposing a mechanism for defining the system affinity.
+
+Another area of interest that can be supported by Context is the querying of the memory affinity status of the system. This is important as a concept to enable future support for affinity (see the Affinity paper). This is an area that requires solution and this papers outlines one such direction.
+
 
 ******************************************************************
 Proposal
@@ -57,10 +75,15 @@ These execution agents execute work, implemented by a callable,
 that is submitted to the execution context by an **executor**.
 One or more types of executors may submit work to the same
 execution context.
-Work submitted to an execution context is **incomplete** until it 
-(1) is invoked and exits execution by return or exception 
+Work submitted to an execution context is **incomplete** until
+(1) it is invoked and exits execution by return or exception or 
 (2) its submission for execution is cancelled.
 
+    Note: The *execution context* terminology used here
+    and in the Networking TS (N4656) deviate from the 
+    traditional *context of execution* usage that refers
+    to the state of a single executing callable; *e.g.*,
+    program counter, registers, stack frame.
 
 -----------------------------------------------------
 Contrast to Networking TS (N4656) Execution Context
@@ -78,28 +101,31 @@ This executor type has numerous work submission member functions
 each with particular semantics.
 
 
-Differences between the proposed parallelism and concurrency execution context
+Differences between our proposed parallelism and concurrency execution context
 and the networking execution context include the following.
 
-  #.  Limited to executing work, as opposed to providing unspecified services.
+  #.  Networking context is Limited to executing work, as opposed to providing unspecified services.
 
-  #.  Is not a concrete base class from which other forms of execution contexts
+  #.  Networking context is not a concrete base class from which other forms of execution contexts
       are derived; *e.g.*, ``system_context`` , ``io_context`` .
 
-  #.  An extensible one-to-many relationship between an execution context type
+  #.  Our context is an extensible one-to-many relationship between an execution context type
       and executor types that may submit work, as opposed to a particular
       executor type with specific work submission functions.
 
-  #.  The proposed ``async_execution_context`` could be viewed as having
+  #.  Our proposed ``async_execution_context`` could be viewed as having
       similar intent as the networking ``system_context``.
-      The significant difference of is interchangeability with
+      The significant difference is interchangeability with
       ``std::async`` usage and extensibility to other executors
       versus the prescribed networking ``system_executor``.
 
 
 -----------------------------------------------------
-Hardware Locality (hwloc) software package
+Partitioning and Affinity State of the Art
 -----------------------------------------------------
+
+Hardware Locality (hwloc) Software Package
+------------------------------------------
 
 The `hardware locality (hwloc) software package
 <https://www.open-mpi.org/projects/hwloc/>`_
@@ -109,6 +135,37 @@ on which threads execute.
 The proposed thread execution resource is motivated
 by a small fraction of hwloc capabilities.
 
+SYCL for OpenCL and HSA Standards
+---------------------------------
+
+`SYCL <https://www.khronos.org/registry/SYCL/specs/sycl-1.2.pdf>`_ (based on
+`OpenCL <https://www.khronos.org/registry/OpenCL/specs/opencl-2.2.pdf>`_)
+provides a C++ programming model for targeting a wide range of heterogeneous
+systems including multi-core CPUs, NUMA systems, embedded SoCs and discrete
+accelerators.
+`HSA (Heterogeneous System Architecture) <http://www.hsafoundation.com/standards/>`_
+is a similar standard that provides a lower level, and lower overhead API and
+set of architecture requirements.
+
+Both of these standards represent the topology of a system with a hierarchy of
+ids that remain constant throughout the execution of a program. Both also allow
+users to partition the system topology to do fine-grained work execution. The
+extent of the partitioning depends on the platform.
+
+In contrast, OpenMP requires an external environment variable set by the user.
+They use the idea of an abstract Place as defined by the user over all threads, cores, and sockets.
+In this way, it enable the user to secify the granularity of the topology, and then further enable
+defining the desired affinity for being on the same Place as master thread, or scatter out in a round robin fashion, 
+as well as compacting it around the Master. It can also define for each nested parallelism level,
+because the work may change or become irregular during runtime. 
+
+This design, while flexible is not possible for C++ Affinty. C++ cannot use the environment variable for input configuration.
+The advantage of the OpenMP design is its use of abstract places which makes it flexible for some future core configuration
+but it means the programmer has to decide whether to describe the places 
+in terms of threads, cores, or sockets which still requires some actual hardware knowledge. 
+Still, the fundamental of its implementation has shown it is doable on most architectures. In that respect, C++ implementation
+would only need to define the interface, but the underlying mechanism should be similar.
+Since its addition in OpenMP 3, this feature has a great deal of experience from HPC and demonstartes implementability.
 
 ------------------------------------------------------------------------------
 Minimal *Concept* Specification
@@ -144,6 +201,9 @@ Minimal *Concept* Specification
 
   class ExecutionContext /* exposition only */ {
   public:
+
+    using at_destruction = /* implementation defined */ ;
+
     ~ExecutionContext();
 
     // Not copyable or moveable
@@ -153,7 +213,7 @@ Minimal *Concept* Specification
     ExecutionContext & operator = ( ExecutionContext && ) = delete ;
 
     // Execution resource
-    using execution_resource_t = /* implementation defined */
+    using execution_resource_t = /* implementation defined */ ;
 
     execution_resource_t const & execution_resource() const noexcept ;
 
@@ -254,37 +314,57 @@ Let ``EC`` be an *ExecutionContext* type.
   ``abandon_on_destruction``, ``stop_on_destruction`` and
   ``wait_on_destruction```.
 
-    - If ``abandon_on_destruction`` is true the ``EC`` will cancel all work that
-    is currently executing and all work that has not yet started executing.
+    - If ``abandon_on_destruction`` is true the ``EC`` will abort all work that
+    is currently executing and all work that has not yet started executing. Any
+    subsequent work which is submitted will be rejected.
     - If ``stop_on_destruction`` is true the ``EC`` will wait for all currently
-    executing work and cancel work which has not yet started executing.
+    executing work and cancel work which has not yet started executing. Any
+    subsequent work which is submitted will be rejected.
     - If ``wait_on_destruction`` is true the ``EC`` will wait for all incomplete
     work to be executed. If ``wait_on_outstanding_work_t`` is true the ``EC``
     will also wait while the executor property ``outstanding_work`` is true for
-    any executors associated with ``EC``.
+    any executors associated with ``EC``, otherwise any subsequent work which is
+    submitted will be rejected.
 
 | ``template< class ExecutionContextProperty >``
 | ``query_member_result_t<ExecutionContext, Property> EC::query( ExecutionContextProperty p );``
 
   Returns: The current value of the property specified by ``p``.
 
-------------------------------------------------------------------------------
-Thread Execution Resource
-------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Execution Resource (see also P0761, Executors Design Document)
+--------------------------------------------------------------------------------
 
-A *thread* executes on a *processing unit* (PU) within an
+An *execution resource* is an implementation defined
+hardware and/or software facility capable of executing a
+callable function object.
+Different resources may offer a broad array of functionality
+and semantics and exhibit different performance characteristics
+of interest to the performance-conscious programmer.
+For example, an implementation might expose different processor cores,
+with potentially non-uniform access to memory, as separate resources
+to enable programmers to reason about locality.
+
+An execution resource can range from SIMD vector units accessible
+in a single thread to an entire runtime managing a large collection of threads.
+
+--------------------------------------------------------------------------------
+Thread Execution Resource
+--------------------------------------------------------------------------------
+    
+A *thread of execution* executes on a *processing unit* (PU) within an
 *execution resource*.
-Threads can make *concurrent forward progress* only if they execute on
-different processing unit.
+*Threads of execution* can make *concurrent forward progress*
+only if they execute on different processing units.
 Conversely, a single processing unit cannot
-cause two or more threads to make concurrent forward progress.
-A *thread execution resource* identifies a specific set of processing units
-within the system hardware.
+cause two or more *threads of execution* to make concurrent forward progress.
+A *thread execution resource* is associated with a
+specific set of processing units within the system hardware.
 
   [Note:
   A *CPU hyperthread* is a common example of 
   a processing unit.
-  In a Linux runtime a thread execution resource is defined by
+  In a Linux runtime a *thread execution resource* is defined by
   a ``cpu_set_t`` object and is queried through the
   ``sched_getaffinity`` function.
   --end note]
@@ -293,66 +373,78 @@ A *processing unit* or *thread execution resource* may be what
 was intended by the undefined term "thread contexts" in 33.3.2.6,
 "thread static members."
 
-A thread execution resource may have *locality partitions*
-for its set of processing units.
+A *thread execution resource* may have *locality partitions*
+for its associated set of processing units.
+For example, hyperthreads sharing the same CPU core are more local
+to one another than to a hyperthreads on different core.
 
 .. code-block:: c++
 
   struct thread_execution_resource_t {
 
-    static inline constexpr size_t procset_limit = /* implementation defined */ ;
+    size_t concurrency() const noexcept ;
 
-    static size_t procset_size();
+    size_t partition_size() const noexcept ;
+    
+    const thread_execution_resource_t & partition( size_t i ) const noexcept ;
 
-    using procset_t = std::bitset< procset_limit > ;
-
-    procset_t const & procset() const noexcept ;
-
-    std::vector<thread_execution_resource_t> partition() const noexcept ;
+    const thread_execution_resource_t & member_of() const noexcept ;
   };
 
   extern thread_execution_resource_t program_thread_execution_resource ;
 
 ..
 
-``static inline constexpr size_t procset_limit = /* implementation defined */ ;``
-
-  *Loose* upper bound for the number of processing units
-  available across system hardware supported by the library ABI.
-
-``static size_t procset_size();``
+``size_t concurrency();``
 
   Returns:
-  *Tight* upper bound for the number of processing units available
-  for the system hardware in which the program is running.
-  ``! procset()[k]`` when ``procset_size() <= k``.
+  This execution resource's potential for concurrent forward progress;
+  *i.e.*, the number of processing units
+  associated with this execution resource.
 
-  Remark: Has the same intent as 33.2.2.6
+  Remark: Has similar intent as 33.2.2.6
   ``std::thread::hardware_concurrency();`` which returns
   "The number of hardware thread contexts."
 
-``procset_t const & procset() const noexcept ;``
+``size_t partition_size() const noexcept ;``
 
   Returns:
-  Processing unit *k* is in the thread execution resource
-  if-and-only-if *M[k]* is set.
+  Number of locality partitionings of the execution resource.
+  
+``const thread_execution_resource_t & partition(size_t i) const noexcept ;``
 
-
-``std::vector<thread_execution_resource_t> partition() const noexcept ;``
+  Requires: ``i < partition_size()``.
 
   Returns:
-  Locality partitions of the execution resource.
-  Given thread execution resource ``E`` and
-  ``0 < E.partitions().size()`` then
-  ``E.procset()[k]`` is set then there exists
-  one-and-only-one locality partition ``i`` such that
-  ``E[i].procset()[k]``.
+  A locality partition of the execution resource.
+  Locality partitions are associated disjoint subsets of the
+  thread execution resource's processing units.
+
+.. code-block:: c++
+
+  void verify_concurrency( thread_execution_resource_t const & E )
+  {
+    size_t sum = 0 ;
+    for ( size_t i = 0 ; i < E.partition_size() ; ++i )
+      sum += E.partition(i).concurrency();
+    assert( E.partition_size() == 0 || E.concurrency() == sum );
+  }
+
+..
 
   Remark:
   Processing units residing in the same locality partition
   are *more local* with respect to the memory system
   than processing units in disjoint partitions.
   For example, non-uniform memory access (NUMA) partitions.
+
+``const thread_execution_resource_t & member_of() const noexcept ;``
+
+  Returns:
+  If thread execution resource ``M`` is a member of a
+  thread execution resource ``E`` partitioning then returns ``E``,
+  ``M == E.partition(i)`` for some ``i`` then ``E == M.member_of()``.
+  Otherwise returns ``M``.
 
 
 ``extern thread_execution_resource_t program_thread_execution_resource ;``
@@ -365,12 +457,54 @@ for its set of processing units.
 
     [Note:
     For example, the linux ``taskset`` command can restrict a program to
-    a specified set of processing units and the program can use
-    ``sched_getaffinity(getpid(),...)`` to query that restriction.
-    The proposed ``program_thread_execution_resource.procset()``
-    is intended to provide the same query mechanism.
+    a specified set of processing units.  The program can use
+    ``sched_getaffinity(0,...)`` to query that restriction.
+    The proposed ``program_thread_execution_resource``
+    is intended to provide the same information.
     --end note]
 
+  Requires:
+  ``program_thread_execution_resource.member_of() ==
+  program_thread_execution_resource`` and all ``member_of()``
+  recursions terminate with ``program_thread_execution_resource``.
+
+  Remark:
+  A high-quality implementation will provide a hierarchical
+  locality partitioning that terminates when members have
+  ``concurrency() == 1``.
+
+--------------------------------------------------------------------------------
+This Thread Execution Resource
+--------------------------------------------------------------------------------
+
+Add to **33.3.3 Namespace this_thread**
+
+.. code-block:: c++
+
+  namespace std::this_thread {
+
+    const thread_execution_resource_t & get_resource();
+
+  }
+
+..
+
+
+``const thread_execution_resource_t & this_thread::get_resource()``
+
+  Returns:
+  An execution resource on which this thread was executing during the
+  call to ``get_resource``.
+
+  Remark:
+  A thread may migrate between thread execution resources.
+  As such the ``get_resource`` returns one of those resources on
+  which the thread was executing during the call to ``get_resource``.
+  There is no guarantee that this thread is executing on the
+  returned thread execution resource before or after the
+  call to ``get_resource``.
+  A high-quality implementation will return an execution resource
+  with ``concurrency() == 1``.
 
 ------------------------------------------------------------------------------
 Motivation for Standard Async Execution Context and Executor
@@ -463,17 +597,32 @@ Wording for Standard Async Execution Context and Executor
 
 
 ******************************************************************
-Potential additions, request straw poll for each
+Appendices
 ******************************************************************
+
+------------------------------------------------------------------------------
+Potential Additions: Request straw poll for each
+------------------------------------------------------------------------------
 
 ..  _`potential additions` :
 
-  #. Extension of *33 Thread support library* for querying the
-     processing unit on which an executing thread *recently* resided,
-     restrict a thread to execute on a specified thread execution resource,
-     query the thread execution resource restriction imposed on a thread.
-     Note: By definition a program's threads are restricted to
-     ``program_thread_execution_resouce()``.
+Straw polls requested for each of the following potential additions.
+
+  - Strongly-favor = I must have this in next revision of this paper.
+  - Weakly-favor = I'd like to see this in a future paper, or perhaps the next revision.
+  - Neutral = *whatever*
+  - Weakly-against = I don't want to see this in the next revision of this paper, but I am willing to look at it in a future paper.
+  - Strongly-against = I never want to see this in any paper.
+
+
+
+  #. Add to `thread_execution_resource_t` a hardware architecture trait;
+     e.g., the **hwloc** trait for *socket*, *numa*, and *core*.
+
+  #. A mechanism to bind the execution of a ``std::thread`` to
+     a specified ``thread_execution_resource``.
+     Note that by definition all ``std::thread`` are bound to
+     ``program_thread_execution_resource``.
 
   #. A mechanism to accumulate and query exceptions thrown by
      callables that were submitted by a one-way executor.
@@ -488,12 +637,25 @@ Potential additions, request straw poll for each
      Similar intent as Networking TS ``system_executor::stop()``.
 
   #. A mechanism for aborting callables that are executing.
-     *Included for completeness, but not currently requested or recommended.*
+     *Included for completeness, the authors are strongly-against.*
 
   #. A preferred-locality (affinity) memory space allocator
 
   #. Proposal to revise Networking TS execution context to align with
      parallelism and concurrency execution context.
 
+  #. Current `thread_execution_resource_t` assumes static set of
+     processing units with static hierarchical partitioning topology.
+     A process' set of processing units and associated topology could be
+     dynamic such that an executing process could adapt to changes;
+     e.g., cores could dynamically go off-line and previously off-line
+     cores could come back on-line.
+     A dynamic set of processing units and dynamic hierarchical
+     partitioning topology would require a complete redesign to address
+     race conditions between querying and changing the execution resource.
+     *Authors need to see a performant runtime that handles such dynamicity
+     before considering such a change.*
+
 .. Note: Boost "ASIO" library
+
 
