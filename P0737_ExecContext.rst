@@ -188,7 +188,7 @@ Minimal *Concept* Specification
   using query_member_result_t = typename query_member_result<ExecutionContext,
     Property>::type;
 
-  // Directionality properties:
+  // On destruction properties:
 
   constexpr struct abandon_on_destruction_t {} abandon_on_destruction;
   constexpr struct stop_on_destruction_t {} stop_on_destruction;
