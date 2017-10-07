@@ -315,16 +315,16 @@ Let ``EC`` be an *ExecutionContext* type.
   ``wait_on_destruction```.
 
     - If ``abandon_on_destruction`` is true the ``EC`` will abort all work that
-    is currently executing and all work that has not yet started executing. Any
-    subsequent work which is submitted will be rejected.
+      is currently executing and all work that has not yet started executing.
+      Any subsequent work which is submitted will be rejected.
     - If ``stop_on_destruction`` is true the ``EC`` will wait for all currently
-    executing work and cancel work which has not yet started executing. Any
-    subsequent work which is submitted will be rejected.
+      executing work and cancel work which has not yet started executing. Any
+      subsequent work which is submitted will be rejected.
     - If ``wait_on_destruction`` is true the ``EC`` will wait for all incomplete
-    work to be executed. If ``wait_on_outstanding_work_t`` is true the ``EC``
-    will also wait while the executor property ``outstanding_work`` is true for
-    any executors associated with ``EC``, otherwise any subsequent work which is
-    submitted will be rejected.
+      work to be executed. If ``wait_on_outstanding_work_t`` is true the ``EC``
+      will also wait while the executor property ``outstanding_work`` is true
+      for any executors associated with ``EC``, otherwise any subsequent work
+      which is submitted will be rejected.
 
 | ``template< class ExecutionContextProperty >``
 | ``query_member_result_t<ExecutionContext, Property> EC::query( ExecutionContextProperty p );``
