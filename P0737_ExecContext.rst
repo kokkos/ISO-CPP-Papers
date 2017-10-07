@@ -120,6 +120,28 @@ Minimal *Concept* Specification
 
 .. code-block:: c++
 
+  // Type traits:
+
+  template<class ExecutionContext, class Property> struct can_query;
+  template<class Executor, class Property>
+  constexpr bool can_query_v = can_query<Executor, Property>::value;
+
+  template<class ExecutionContext, class Property> struct query_member_result;
+  template<class ExecutionContext, class Property>
+  using query_member_result_t = typename query_member_result<ExecutionContext,
+    Property>::type;
+
+  // Directionality properties:
+
+  constexpr struct abandon_on_destruction_t {} abandon_on_destruction;
+  constexpr struct stop_on_destruction_t {} stop_on_destruction;
+  constexpr struct wait_on_destruction_t {} wait_on_destruction;
+
+  // Outstanding work properties:
+
+  constexpr struct wait_on_outstanding_work_t {} wait_on_outstanding_work;
+  constexpr struct not_wait_on_outstanding_work_t {} not_wait_on_outstanding_work;
+
   class ExecutionContext /* exposition only */ {
   public:
     ~ExecutionContext();
@@ -146,6 +168,10 @@ Minimal *Concept* Specification
     bool wait_until( chrono::time_point<Clock,Duration> const & );
     template< class Rep , class Period >
     bool wait_for( chrono::duration<Rep,Period> const & );
+
+    // Query function template:
+    template <typename ExecutionContextProperty>
+    query_member_result_t<ExecutionContext, Property> query(ExecutionContextProperty p) ;
   };
 
   bool operator == ( ExecutionContext const & , ExecutionContext const & );
@@ -224,13 +250,23 @@ Let ``EC`` be an *ExecutionContext* type.
 
 ``EC::~EC();``
 
-  Effects: Type dependent potential behaviors identified by
-  to-be-defined *at destruction* traits.
+  Effects: Destruction behaviour is defined by the on destruction properties
+  ``abandon_on_destruction``, ``stop_on_destruction`` and
+  ``wait_on_destruction```.
 
-    - ``wait()`` for all incomplete work.
-    - Cancel work that is not executing and ``wait()`` for executing work.
-    - Cancel work that is not executing and abort executing work.
+    - If ``abandon_on_destruction`` is true the ``EC`` will cancel all work that
+    is currently executing and all work that has not yet started executing.
+    - If ``stop_on_destruction`` is true the ``EC`` will wait for all currently
+    executing work and cancel work which has not yet started executing.
+    - If ``wait_on_destruction`` is true the ``EC`` will wait for all incomplete
+    work to be executed. If ``wait_on_outstanding_work_t`` is true the ``EC``
+    will also wait while the executor property ``outstanding_work`` is true for
+    any executors associated with ``EC``.
 
+| ``template< class ExecutionContextProperty >``
+| ``query_member_result_t<ExecutionContext, Property> EC::query( ExecutionContextProperty p );``
+
+  Returns: The current value of the property specified by ``p``.
 
 ------------------------------------------------------------------------------
 Thread Execution Resource
