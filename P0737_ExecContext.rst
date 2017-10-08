@@ -180,32 +180,12 @@ Minimal *Concept* Specification
 
 .. code-block:: c++
 
-  // Type traits:
-
-  template<class ExecutionContext, class Property> struct can_query;
-  template<class Executor, class Property>
-  constexpr bool can_query_v = can_query<Executor, Property>::value;
-
-  template<class ExecutionContext, class Property> struct query_member_result;
-  template<class ExecutionContext, class Property>
-  using query_member_result_t = typename query_member_result<ExecutionContext,
-    Property>::type;
-
-  // On destruction properties:
-
-  constexpr struct abandon_on_destruction_t {} abandon_on_destruction;
-  constexpr struct stop_on_destruction_t {} stop_on_destruction;
-  constexpr struct wait_on_destruction_t {} wait_on_destruction;
-
-  // Outstanding work properties:
-
-  constexpr struct wait_on_outstanding_work_t {} wait_on_outstanding_work;
-  constexpr struct not_wait_on_outstanding_work_t {} not_wait_on_outstanding_work;
-
   class ExecutionContext /* exposition only */ {
   public:
 
-    using at_destruction = /* implementation defined */ ;
+    template <typename ExecutionContextProperty>
+      /* exposition only */ detail::query_t< ExecutionContext , ExecutionContextProperty >
+    query(ExecutionContextProperty p) const ;
 
     ~ExecutionContext();
 
@@ -231,18 +211,39 @@ Minimal *Concept* Specification
     bool wait_until( chrono::time_point<Clock,Duration> const & );
     template< class Rep , class Period >
     bool wait_for( chrono::duration<Rep,Period> const & );
-
-    // Query function template:
-    template <typename ExecutionContextProperty>
-    query_member_result_t<ExecutionContext, Property> query(ExecutionContextProperty p) ;
   };
 
   bool operator == ( ExecutionContext const & , ExecutionContext const & );
   bool operator != ( ExecutionContext const & , ExecutionContext const & );
 
+  // Execution context properties:
+
+  constexpr struct reject_on_destruction_t {} reject_on_destruction;
+  constexpr struct abandon_on_destruction_t {} abandon_on_destruction;
+  constexpr struct abort_on_destruction_t {} abort_on_destruction;
+  constexpr struct wait_on_destruction_t {} wait_on_destruction;
+
 ..
 
 Let ``EC`` be an *ExecutionContext* type.
+
+
+| ``template <typename ExecutionContextProperty>``
+|    ``/* exposition only */ detail::query_t< EC , ExecutionContextProperty >``
+| ``EC::query(ExecutionContextProperty p) const noexcept;``
+
+  Returns:
+  The current value of the execution context property specified by ``p``
+  when the execution context supports the input property.
+  Otherwise ``void``.
+  [Note: The *detail::query_t* is for exposition only denoting the
+  expectation that an implementation will use an implementation-defined
+  metafunction to determine the return type. --end note]
+
+  Remark:
+  When ``is_same_v<void,decltype(ec.query(p))`` then the execution context
+  property is unknown to the execution context.
+
 
 ``EC::execution_resource_t const & EC::execution_resource() const noexcept ;``
 
@@ -250,12 +251,13 @@ Let ``EC`` be an *ExecutionContext* type.
   execution context to execute work.
   Execution architecture is identified by the ``execution_resource_t`` type.
 
+
 | ``template< class ... ExecutorProperties >``
 |   ``/* exposition only */ detail::executor_t< EC , ExecutorProperties... >``
 | ``EC::executor( ExecutorProperties ... p );``
 
   Returns:
-  An executor with ``\*this`` execution context and
+  An executor with ``*this`` execution context and
   execution properties ``p`` when the execution context
   supports these properties.
   Otherwise ``void``.
@@ -313,27 +315,26 @@ Let ``EC`` be an *ExecutionContext* type.
 
 ``EC::~EC();``
 
-  Effects: Destruction behaviour is defined by the on destruction properties
-  ``abandon_on_destruction``, ``stop_on_destruction`` and
-  ``wait_on_destruction```.
+  Effects:
+  Behavior on destruction is denoted by the value of the queried
+  execution context properties.
 
-    - If ``abandon_on_destruction`` is true the ``EC`` will abort all work that
-      is currently executing and all work that has not yet started executing.
-      Any subsequent work which is submitted will be rejected.
-    - If ``stop_on_destruction`` is true the ``EC`` will wait for all currently
-      executing work and abort work which has not yet started executing. Any
-      subsequent work which is submitted will be rejected.
-    - If ``wait_on_destruction`` is true the ``EC`` will wait for all incomplete
-      work to be executed. If ``wait_on_outstanding_work`` is true the ``EC``
-      will also wait while the executor property ``outstanding_work`` is true
-      for any executors associated with ``EC`` and for any work submitted to
-      said executor(s) to complete, otherwise any subsequent work which is
-      submitted will be rejected.
+    - If ``EC::query(reject_on_destruction)`` returns true
+      then submission of any new work to ``*this`` is rejected.
+    - If ``EC::query(abandon_on_destruction)`` returns true
+      then work that has been submitted to ``*this``
+      but has not yet started executing is abandoned and
+      submission of any new work to ``*this`` is rejected.
+    - If ``EC::query(wait_on_destruction)`` returns true
+      then ``*this`` destructor blocks until work that is executing,
+      not rejected, or not abandoned has completed.
+    - If ``EC::query(abort_on_destruction)`` returns true
+      then ``*this`` attempts to abort work that is executing,
+      abandons work that has not yet started executing,
+      rejects submission of any new work, and does not block.
+      It may not be feasible to abort executing work; however,
+      such work will cease to have a defined execution context.
 
-| ``template< class ExecutionContextProperty >``
-| ``query_member_result_t<ExecutionContext, Property> EC::query( ExecutionContextProperty p );``
-
-  Returns: The current value of the property specified by ``p``.
 
 --------------------------------------------------------------------------------
 Execution Resource (see also P0761, Executors Design Document)
@@ -583,7 +584,7 @@ Wording for Standard Async Execution Context and Executor
 | ``async_execution_context_t::executor( ExecutorProperties ... p );``
 
   Returns:
-  An *executor* with **\*this** *execution context* and
+  An *executor* with ``*this`` *execution context* and
   execution properties ``p``.
   If ``p`` is empty, is ``std::launch::async``, or is ``std::launch::deferred``
   the *executor* type is ``async_executor_t``.
