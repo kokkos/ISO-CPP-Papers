@@ -135,8 +135,8 @@ on which threads execute.
 The proposed thread execution resource is motivated
 by a small fraction of hwloc capabilities.
 
-SYCL for OpenCL and HSA Standards
----------------------------------
+SYCL for OpenCL and HSA
+-----------------------
 
 `SYCL <https://www.khronos.org/registry/SYCL/specs/sycl-1.2.pdf>`_ (based on
 `OpenCL <https://www.khronos.org/registry/OpenCL/specs/opencl-2.2.pdf>`_)
@@ -151,6 +151,9 @@ Both of these standards represent the topology of a system with a hierarchy of
 ids that remain constant throughout the execution of a program. Both also allow
 users to partition the system topology to do fine-grained work execution. The
 extent of the partitioning depends on the platform.
+
+OpenMP
+------
 
 In contrast, OpenMP requires an external environment variable set by the user.
 They use the idea of an abstract Place as defined by the user over all threads, cores, and sockets.
