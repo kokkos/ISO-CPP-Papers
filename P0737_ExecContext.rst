@@ -46,16 +46,38 @@ D0737r0
 The Problem
 ******************************************************************
 
-Current Executor proposal does not define a specific concrete context. An Execution Context is meant to mediate between Execution agents, the executor, and the execution resources. More specifically, an execution context is responsible for managing an execution resource. 
-An execution context also provides an executor for executing work on it’s managed execution resource. Finally, an execution context manages a number of light-weight execution agents.
+Current Executor proposal does not define a specific concrete context.
+An Execution Context is meant to mediate between Execution agents,
+an executor, and execution resources.
+Specifically, an execution context is responsible for
+managing the execution of a number of (light-weight) execution agents
+on an execution resource.
+An execution context also provides executors for submitting work to itself.
 
-The Executor proposal currently does not specifically define a concrete execution context, other then providing a static thread pool as a basic example. As the executor proposal is a joint proposal between several industry representatives - parallel and vectorized algorithms, multi-threaded execution, heterogeneous and distributed execution, and network execution.  It was not deemed necessary to provide a specific concrete execution context. For some areas, a concrete execution context is necessary because it could be used to manage a stream or queue of command kernels, such as in heterogeneous or distributed computing.
-In other domains, such as parallel aand vectorized algorithms, it may remain an abstract concept. 
+The Executor proposal currently does not specifically define a
+concrete execution context, other then providing a static thread pool
+as a basic example.
+As the executor proposal is a joint proposal between several
+industry representatives - parallel and vectorized algorithms,
+multi-threaded execution, heterogeneous and distributed execution,
+and network execution.
+It was not deemed necessary to provide a specific concrete execution context.
+For some areas, a concrete execution context is necessary because
+it could be used to manage a stream or queue of command kernels,
+such as in heterogeneous or distributed computing.
+In other domains, such as parallel aand vectorized algorithms,
+it may remain an abstract concept. 
 
 
-This paper focuses on those domains where a concrete Execution Context is extermemly important while also proposing a mechanism for defining the system affinity.
+This paper focuses on those domains where a concrete Execution Context
+is extermemly important while also proposing a mechanism for defining
+the system affinity.
 
-Another area of interest that can be supported by Context is the querying of the memory affinity status of the system. This is important as a concept to enable future support for affinity (see the Affinity paper). This is an area that requires solution and this papers outlines one such direction.
+Another area of interest that can be supported by Context
+is the querying of the memory affinity status of the system.
+This is important as a concept to enable future support for
+affinity (see the Affinity paper). This is an area that
+requires solution and this papers outlines one such direction.
 
 
 ******************************************************************
@@ -350,7 +372,7 @@ Let ``EC`` be an *ExecutionContext* type.
 Execution Resource (see also P0761, Executors Design Document)
 --------------------------------------------------------------------------------
 
-An *execution resource* is an implementation defined
+An *execution resource* is an descriptor for an implementation defined
 hardware and/or software facility capable of executing a
 callable function object.
 Different resources may offer a broad array of functionality
