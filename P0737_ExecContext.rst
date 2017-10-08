@@ -336,6 +336,16 @@ Let ``EC`` be an *ExecutionContext* type.
       such work will cease to have a defined execution context.
 
 
+| ``bool operator == ( EC const & lhs , EC const & rhs );``
+| ``bool operator != ( EC const & lhs , EC const & rhs );``
+
+  Effects:
+  Return whether ``lhs`` and ``rhs`` refer (or not)
+  to the same execution context: submitting work to
+  ``lhs`` has identical effect as submitting work to ``rhs``.
+  
+
+
 --------------------------------------------------------------------------------
 Execution Resource (see also P0761, Executors Design Document)
 --------------------------------------------------------------------------------
