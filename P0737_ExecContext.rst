@@ -33,7 +33,8 @@ D0737r0
       - Execution resource
       - Wait functions
       - Executor generator
-      - Execution context destruction behavior
+      - Query property
+      - Destructor behavior
 
     - Proposed thread execution resource
     - Proposed this_thread query of thread execution resource
@@ -341,7 +342,7 @@ Let ``EC`` be an *ExecutionContext* type.
 ``EC::~EC();``
 
   Effects:
-  Behavior on destruction is denoted by the value of the queried
+  Behavior during destruction is denoted by the values of the queried
   execution context properties.
 
     - If ``EC::query(reject_on_destruction)`` returns true
@@ -359,6 +360,14 @@ Let ``EC`` be an *ExecutionContext* type.
       rejects submission of any new work, and does not block.
       It may not be feasible to abort executing work; however,
       such work will cease to have a defined execution context.
+
+  Remark:
+  For example, if
+  ``EC::query(reject_on_destruction)``,
+  ``!EC::query(abandon_on_destruction)``, and
+  ``EC::query(wait_on_destruction)`` then
+  submission of new work is rejected and the destructor blocks
+  until all executing and previously submitted work completes.
 
 
 | ``bool operator == ( EC const & lhs , EC const & rhs );``
@@ -681,6 +690,9 @@ Straw polls requested for each of the following potential additions.
 
   #. A mechanism for cancelling submitted callables that have not been invoked.
      Similar intent as Networking TS ``system_executor::stop()``.
+     Note that an execution resource and associated execution context
+     may not be able to cancel submitted work; e.g., submitted to a
+     hardware queue or to a remote dispatch-and-forget queue.
 
   #. A mechanism for aborting callables that are executing.
      *Included for completeness, the authors are strongly-against.*
