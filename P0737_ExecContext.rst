@@ -254,6 +254,9 @@ Let ``EC`` be an *ExecutionContext* type.
 |    ``/* exposition only */ detail::query_t< EC , ExecutionContextProperty >``
 | ``EC::query(ExecutionContextProperty p) const noexcept;``
 
+  Requires:
+  ``ExecutionContextProperty`` is an execution context property.
+
   Returns:
   The current value of the execution context property specified by ``p``
   when the execution context supports the input property.
@@ -418,6 +421,12 @@ to one another than to a hyperthreads on different core.
 .. code-block:: c++
 
   struct thread_execution_resource_t {
+
+    thread_execution_resource_t() = delete ;
+    thread_execution_resource_t( thread_execution_resource_t && ) = delete ;
+    thread_execution_resource_t( thread_execution_resource_t const & ) = delete ;
+    thread_execution_resource_t & operator=( thread_execution_resource_t && ) = delete ;
+    thread_execution_resource_t & operator=( thread_execution_resource_t const & ) = delete ;
 
     size_t concurrency() const noexcept ;
 
