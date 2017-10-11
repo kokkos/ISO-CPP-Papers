@@ -1,10 +1,10 @@
 ===================================================================
-D0737r0 : Execution Context of Execution Agents
+P0737r0 : Execution Context of Execution Agents
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0737r0
-:Date: 2017-xx-xx
+:Number: P0737r0
+:Date: 2017-10-11
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards, Sandia National Laboratories
 :Author: Daniel Sunderland, Sandia National Laboratories
@@ -20,10 +20,9 @@ Revision History
 ******************************************************************
 
 ------------------------------------------------------------
-D0737r0
+D0737r0 : For 2017-11-Albuquerque pre-meeting mailing
 ------------------------------------------------------------
 
-  - Initial paper for 2017-11-Albuquerque meeting
   - State: Design exploration
   - Requested straw polls:
 
@@ -40,7 +39,7 @@ D0737r0
     - Proposed this_thread query of thread execution resource
     - Proposed standard async execution context and executor
     - Interest in each of the suggested `potential additions`_
-      for initial insertion into Executors TS
+      for initial insertion into Concurrency or Executors TS
 
 
 ******************************************************************
