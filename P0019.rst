@@ -3,8 +3,8 @@ P0019r5 : Atomic View
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r5
-:Date: 2017-03-06
+:Number: D0019r6
+:Date: 2017-11-xx
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -14,7 +14,7 @@ P0019r5 : Atomic View
 :Contact: ogiroux@nvidia.com
 :Author: James Reus
 :Contact: reus1@llnl.gov
-:Audience: Library Evolution
+:Audience: Library
 :URL: https://github.com/kokkos/ISO-CPP-Papers/blob/master/P0019.rst
 
 ******************************************************************
@@ -42,7 +42,7 @@ P0019r4
   - 2016-11-09 Issaquah SG1 decision: move to LEWG targeting Concurrency TS V2
 
 ------------------------------------------------------------------------
-D0019r5
+P0019r5
 ------------------------------------------------------------------------
 
   - 2017-03-01 Kona LEWG review
@@ -50,8 +50,8 @@ D0019r5
     - Merge in P0440 Floating Point Atomic View because LEWG
       consensus to move P0020 Floating Point Atomic to C++20 IS
 
-    - Rename from **atomic_view** and **atomic_array_view**
-      to **atomic_ref<T>** and **atomic_ref<T[]>**,
+    - Rename from **atomic_view** and **atomic_array_view**;
+      authors' selection **atomic_ref<T>** and **atomic_ref<T[]>**,
       other name suggested **atomic_wrapper**.
 
     - Remove **constexpr** qualification from default constructor
@@ -66,13 +66,35 @@ D0019r5
 
   - Recommend feature next macro
 
+------------------------------------------------------------------------
+P0019r6
+------------------------------------------------------------------------
+
+  - 2017-11-07 Albuquerque LEWG review
+
+    - Settle on name **atomic_ref**
+
+    - Split out atomic_ref<T[]> into a separate paper,
+      apply editorial changes accordingly
+
+    - Restore copy constructor; not assignment operator
+
+    - add **Throws: Nothing** to constructor but do not add noexcept
+
+    - Remove *wrapping* terminology
+
+    - Address problem of CAS on atomic_ref<T> where T is
+      a struct containing padding bits
+
+    - With these revisions move to LWG
+
 ******************************************************************
 Overview / Motivation / Discussion
 ******************************************************************
 
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
-As required by [atomics.types.generic] 20.5p1 the wrapped type **T**
+As required by [atomics.types.generic] 20.5p1 the value type **T**
 must be trivially copiable.
 This paper includes *atomic floating point* capability defined in P0020r5.
 
@@ -90,7 +112,7 @@ are atomic with respect to any other *atomic reference* that references
 the same object, as defined by equality of pointers to that object. 
 The intent is for atomic operations
 to directly update the referenced object.
-The *atomic reference wrapping constructor* may acquire a resource,
+An *atomic reference constructor* may acquire a resource,
 such as a lock from a collection of address-sharded locks,
 to perform atomic operations.
 Such *atomic reference* objects are not lock-free and not address-free.
@@ -130,51 +152,18 @@ The intent is for *atomic array reference* to provide the
 best-performing implementation of atomic operations
 for the members of the array.  
 
------------------------------------------------------
-Naming
------------------------------------------------------
-
-The current **Header <atomic> synopsis** contains the following.
-
-  |  namespace std {
-  |    template< class T > struct atomic;
-  |    template< class T > struct atomic<T\*>;
-  |  }
-
-The proposal introduces the following type and partial specializations.
-
-  |  namespace std {
-  |  namespace experimental {
-  |
-  |    template< class T > struct atomic_ref;
-  |    template< class T > struct atomic_ref<T\*>;
-  |    template< class T > struct atomic_ref<T[]>;;
-  |
-  |  }}
-
-Other possible naming or partial specializations
-
-  - atomic_wrapper< T >,
-    atomic_wrapper< T * >,
-    atomic_wrapper< T[] >
-
-  - atomic< T & >,
-    atomic< T * & >,
-    atomic< T[] >
-
 ---------------------------------------------------------------
-*Wrappability* Constraints
+*Reference-ability* Constraints
 ---------------------------------------------------------------
 
-The *wrapping constructor* of an atomic reference requires
-that the object be *wrappable* for atomic operations;
-for example that the object is properly aligned in memory
-or resides in GPU register memory.
-This revision of P0019 does not enumerate all potential
-*wrappability* constraints or specify behavior of the
-wrapping constructor when these constraints are violated.
+An object referenced by an *atomic reference* must satisfy,
+possibly architecuture specific, constraints.
+For example that the object is properly aligned in memory
+or does not reside in GPU register memory.
+We do not enumerate all potential constraints or
+specify behavior when these constraints are violated.
 It is quality-of-implementation to generate appropriate
-error information.
+information when constraints are violated.
 
 
 ******************************************************************
@@ -196,7 +185,6 @@ Recommended feature text macro
   |
   |    template< class T > struct atomic_ref ;
   |    template< class T > struct atomic_ref< T \* >;
-  |    template< class T > struct atomic_ref< T[] >;
   |
   |  }}
 
@@ -219,10 +207,10 @@ Recommended feature text macro
   |    bool compare_exchange_strong( T&, T, memory_order = memory_order_seq_cst ) const noexcept;
   |
   |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref( const atomic_ref & );
   |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
-  |    explicit atomic_ref( T & obj ); // *wrapping* constructor
+  |    explicit atomic_ref( T & obj );
   |
   |    T operator=(T) const noexcept ;
   |  };
@@ -243,8 +231,7 @@ Recommended feature text macro
 
 **atomic_ref( T & obj );**
 
-  This wrapping constructor constructs an atomic reference
-  that references the non-atomic object.
+  Construct an atomic reference that references the non-atomic object.
   Atomic operations applied to object through a referencing
   *atomic reference* are atomic with respect to atomic operations
   applied through any other *atomic reference* that references that *object*.
@@ -258,13 +245,10 @@ Recommended feature text macro
   ``atomic_ref`` instances.
   If the referenced *object* is of a class or aggregate type
   then members of that object shall not be concurrently
-  wrapped by an ``atomic_ref`` object.
-  The referenced object shall not be a member of an array that
-  is wrapped by an ``atomic_ref<T[]>`` .
-  [Note: Other implementation dependent conditions may exist. - end note]
+  referenced by an ``atomic_ref`` object.
 
   *Effects:* ``*this`` references the non-atomic object*
-  [Note: The wrapping constructor may acquire a shared resource,
+  [Note: The constructor may acquire a shared resource,
   such as a lock associated with the referenced object,
   to enable atomic operations applied to the referenced
   non-atomic object. - end note]
@@ -299,7 +283,7 @@ Recommended feature text macro
   |    atomic_ref( const atomic_ref & ) = delete ;
   |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
-  |    explicit atomic_ref(  *integral*  & obj ); // *wrapping* constructor
+  |    explicit atomic_ref(  *integral*  & obj );
   |
   |    *integral* operator=( *integral* ) const noexcept ;
   |    *integral* operator++(int) const noexcept;
@@ -336,7 +320,7 @@ Recommended feature text macro
   |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) const noexcept;
   |
   |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref( const atomic_ref & );
   |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |
   |    explicit atomic_ref( *floating-point* & obj ) noexcept ;
@@ -371,10 +355,10 @@ Recommended feature text macro
   |
   |    ~atomic_ref();
   |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
+  |    atomic_ref( const atomic_ref & );
   |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
   |    
-  |    explicit atomic_ref( T * & obj ); // *wrapping* constructor
+  |    explicit atomic_ref( T * & obj );
   |
   |    T * operator=( T * ) const noexcept ;
   |    T * operator++(int) const noexcept;
@@ -384,86 +368,6 @@ Recommended feature text macro
   |    T * operator+=( difference_type ) const noexcept;
   |    T * operator-=( difference_type ) const noexcept;
   |  };
-
--------------------------------------------------------------------------
-*add to* Partial specializations for elements of array of unknown bound
--------------------------------------------------------------------------
-
-Performing compatibility verification within the atomic reference
-wrapping constructor for many elements in an array can introduce
-unecessary, redundant operations.
-The *atomic array reference* partial specialization wraps the entire array
-such that compatibility verification can be performed once and
-amortized among all atomic references to members of that array.
-
-  |  template< class T > struct atomic_ref< T[] > {
-  |
-  |    static constexpr size_t required_alignment = *implementation defined* ;
-  |    static constexpr bool is_always_lock_free = *implementation defined* ;
-  |    bool is_lock_free() const noexcept ;
-  |
-  |    atomic_ref() = delete ;
-  |    atomic_ref( const atomic_ref & ) = delete ;
-  |    atomic_ref & operator = ( const atomic_ref & ) = delete ;
-  |
-  |    atomic_array_ref( T * , size_t ); // wrapping constructor
-  |
-  |    size_t size() const noexcept ;
-  |
-  |    atomic_ref<T> operator[]( size_t ) const noexcept;
-  |  };
-
-**atomic_ref( T * array , size_t length );**
-
-  This wrapping constructor constructs an ``atomic_ref<T[]>``
-  that references an array of non-atomic elements
-  spanning ``[array..array+length)``.
-
-  *Requires:* The referenced non-atomic array shall be
-  aligned to ``required_alignment``.
-  The lifetime (3.8) of ``*this``
-  shall not exceed the lifetime of the referenced non-atomic array.
-  All ``atomic_ref<T[]>`` instances that reference any element of
-  the array shall reference the same span of the array.
-  As long as any ``atomic_ref<T[]>`` instance exists that references
-  array all accesses to members of that array shall exclusively occur
-  through those ``atomic_ref<T[]>`` instances.
-  No element of array is concurrently wrap constructed by an
-  ``atomic_ref<T>``.
-  [Note: Other implementation dependent conditions may exist. - end note]
-
-  *Effects:* ``*this`` references the non-atomic array.
-  Atomic operations on members of array are atomic with respect
-  to atomic operations on members referenced through any other
-  ``atomic_ref<T[]>`` instance.
-  [Note: The *wrapping constructor* may acquire shared resources,
-  such as a locks associated with the referenced array,
-  to enable atomic operations applied to the referenced
-  non-atomic members of referenced array. - end note]
-
-**atomic_ref<T> operator[]( size_t i ) const noexcept ;**
-
-  *Requires:* ``i < size()`` and the lifetime of the returned
-  ``atomic_ref<T>`` shall not exceed the lifetime of the
-  associated ``atomic_ref<T[]>``.
-  [Note: Analogous to the lifetime of an iterator with respect to the
-  lifetime of the associated container. - end note]
-
-  Example usage:
-
-.. code-block:: c++
-
-  // atomic reference wrapper constructor:
-  atomic_ref<T[]> array( ptr , N );
-
-  // atomic operation on a member:
-  array[i].atomic-operation(...);
-
-  // atomic operations through a temporary value 
-  // within a concurrent function:
-  auto x = array[i];
-  x.atomic-operation-a(...);
-  x.atomic-operation-b(...);
 
 ..
 

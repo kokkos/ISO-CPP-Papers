@@ -1,10 +1,10 @@
 ===================================================================
-P0020r5 : Floating Point Atomic
+D0020r6 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0020r5
-:Date: 2017-03-06
+:Number: D0020r6
+:Date: 2017-11-10
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
 :Contact: hcedwar@sandia.gov
@@ -56,6 +56,14 @@ P0020r5
   - Note: Section and paragraph numbers have not yet been updated
     to C++17 working draft new section numbering.
 
+------------------------------------------------------------
+D0020r6
+------------------------------------------------------------
+
+  - 2017-11-10 Albuquerque LWG editorial update:
+  - Align with wording for [atomics.types.int] in N4700
+  - Add stable name [atomics.types.float]
+
 ******************************************************************
 Overview / Motivation
 ******************************************************************
@@ -68,63 +76,79 @@ The capability for atomic addition on floating-point types
 critical for parallel high performance computing (HPC) applications.
 
 ******************************************************************
-Proposal:
+Proposal
 ******************************************************************
 
----------------------------------------------------------------
-*add section to 32.7* Specializations for floating-point types
----------------------------------------------------------------
+Add **Specializations for floating-point types**
+to [atomics.types.generic] .
 
-The shall be specializations of the **atomic** template for 
+------------------------------------------------------------
+Wording:
+------------------------------------------------------------
+
+**Specializations for floating-point types  [atomics.types.float]**
+
+There are specializations of the atomic template for the
 floating-point types ``float``, ``double``, ``long double``.
 For each such floating-point type *floating-point* ,
 the specialization ``atomic<`` *floating-point* ``>`` provides
 additional atomic operations appropriate to floating-point types.
 
-  |  template<> struct atomic< *floating-point* > {
-  |    static constexpr bool is_always_lock_free = *implementation-defined* ;
-  |    bool is_lock_free() const volatile noexcept;
-  |    bool is_lock_free() const noexcept;
-  |    void store( *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    void store( *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
-  |    *floating-point* load( memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    *floating-point* load( memory_order = memory_order_seq_cst ) noexcept;
-  |    operator *floating-point* () volatile noexcept ;
-  |    operator *floating-point* () noexcept ;
-  |    *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) volatile noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) noexcept;
-  |    bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) volatile noexcept;
-  |    bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) noexcept;
-  |    bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
-  |    bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
+  |  namespace std {
+  |    template<> struct atomic< *floating-point* > {
+  |      static constexpr bool is_always_lock_free = *implementation-defined* ;
+  |      bool is_lock_free() const volatile noexcept;
+  |      bool is_lock_free() const noexcept;
+  |      void store( *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |      void store( *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
+  |      *floating-point* load( memory_order = memory_order_seq_cst ) volatile noexcept;
+  |      *floating-point* load( memory_order = memory_order_seq_cst ) noexcept;
+  |      operator *floating-point* () volatile noexcept ;
+  |      operator *floating-point* () noexcept ;
+  |      *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |      *floating-point* exchange( *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
+  |      bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) volatile noexcept;
+  |      bool compare_exchange_weak( *floating-point* & , *floating-point* , memory_order , memory_order ) noexcept;
+  |      bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) volatile noexcept;
+  |      bool compare_exchange_strong( *floating-point* & , *floating-point*  , memory_order , memory_order ) noexcept;
+  |      bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |      bool compare_exchange_weak( *floating-point* & , *floating-point*  , memory_order = memory_order_seq_cst ) noexcept;
+  |      bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) volatile noexcept;
+  |      bool compare_exchange_strong( *floating-point* &, *floating-point* , memory_order = memory_order_seq_cst ) noexcept;
   |
-  |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) volatile noexcept;
-  |    *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
-  |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) volatile noexcept;
-  |    *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
+  |      *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) volatile noexcept;
+  |      *floating-point* fetch_add( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
+  |      *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) volatile noexcept;
+  |      *floating-point* fetch_sub( *floating-point* , memory_order = memory_order_seq_cst) noexcept;
   |
-  |    atomic() noexcept = default ;
-  |    constexpr atomic( *floating-point* ) noexcept ;
-  |    atomic( const atomic & ) = delete ;
-  |    atomic & operator = ( const atomic & ) = delete ;
-  |    atomic & operator = ( const atomic & ) volatile = delete ;
-  |    *floating-point* operator=( *floating-point* ) volatile noexcept ;
-  |    *floating-point* operator=( *floating-point* ) noexcept ;
+  |      atomic() noexcept = default ;
+  |      constexpr atomic( *floating-point* ) noexcept ;
+  |      atomic( const atomic & ) = delete ;
+  |      atomic & operator = ( const atomic & ) = delete ;
+  |      atomic & operator = ( const atomic & ) volatile = delete ;
+  |      *floating-point* operator=( *floating-point* ) volatile noexcept ;
+  |      *floating-point* operator=( *floating-point* ) noexcept ;
   |
-  |    *floating-point* operator+=( *floating-point* ) volatile noexcept;
-  |    *floating-point* operator+=( *floating-point* ) noexcept;
-  |    *floating-point* operator-=( *floating-point* ) volatile noexcept;
-  |    *floating-point* operator-=( *floating-point* ) noexcept;
-  |  };
+  |      *floating-point* operator+=( *floating-point* ) volatile noexcept;
+  |      *floating-point* operator+=( *floating-point* ) noexcept;
+  |      *floating-point* operator-=( *floating-point* ) volatile noexcept;
+  |      *floating-point* operator-=( *floating-point* ) noexcept;
+  |    };
+  |  }
 
-The atomic floating-point specializations shall be standard-layout structs.
-They shall each have a trivial default constructor and a trivial destructor.
 
-Descriptions are provided below only for members that differ from the primary template.
+
+The atomic floating-point specializations are standard-layout structs.
+They each have a trivial default constructor and a trivial destructor.
+
+Descriptions are provided below only for members
+that differ from the primary template.
+
+The following operations perform arithmetic
+addition and subtraction computations.
+The key, operator, and computation correspondence are
+identified in Table 138 — Atomic arithmetic computations.
+
 
 | **T A::fetch_**\ *key*\ **(T operand, memory_order order = memory_order_seq_cst) volatile noexcept;**
 | **T A::fetch_**\ *key*\ **(T operand, memory_order order = memory_order_seq_cst) noexcept;**
@@ -148,4 +172,8 @@ Descriptions are provided below only for members that differ from the primary te
   on *floating-point* may be different than the calling thread's
   floating-point environment.
 
+| **T operator** *op* **=(T operand) volatile noexcept;**
+| **T operator** *op* **=(T operand) noexcept;**
+
+  *Effects:* Equivalent to: return fetch_key (operand) *op* operand;
 
