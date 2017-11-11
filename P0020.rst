@@ -1,9 +1,9 @@
 ===================================================================
-D0020r6 : Floating Point Atomic
+P0020r6 : Floating Point Atomic
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: D0020r6
+:Number: P0020r6
 :Date: 2017-11-10
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
@@ -57,7 +57,7 @@ P0020r5
     to C++17 working draft new section numbering.
 
 ------------------------------------------------------------
-D0020r6
+P0020r6
 ------------------------------------------------------------
 
   - 2017-11-10 Albuquerque LWG editorial update:
@@ -176,4 +176,15 @@ identified in Table 138 — Atomic arithmetic computations.
 | **T operator** *op* **=(T operand) noexcept;**
 
   *Effects:* Equivalent to: return fetch_key (operand) *op* operand;
+
+  *Remark:*
+  If the result is not a representable value for its type (5p4)
+  the result is unspecified, but the operations
+  otherwise have no undefined behavior.
+  Atomic arithmetic operations on *floating-point*
+  should conform to ``std::numeric_limits<`` *floating-point* ``>``
+  traits associated with the floating-point type (18.3.2).
+  The floating-point environment (26.4) for atomic arithmetic operations
+  on *floating-point* may be different than the calling thread's
+  floating-point environment.
 
