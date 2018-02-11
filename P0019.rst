@@ -124,7 +124,7 @@ acquired resource as opposed to re-acquiring that resource.
 
 Introducing concurrency within legacy codes may require
 replacing operations on existing non-atomic objects with atomic operations
-such that the non-atomic object cannot be replaced with a **atomic** object.
+such that the non-atomic object cannot be replaced with an **atomic** object.
 
 An object may be heavily used non-atomically in well-defined phases
 of an application.  Forcing such objects to be exclusively **atomic**
@@ -171,12 +171,12 @@ Concern with ``atomic<T>`` and padding bits in ``T``
 ---------------------------------------------------------------
 
 A concern has been discussed for ``atomic<T>`` where ``T`` is a
-class type than contains padding bits and how construction and
+class type that contains padding bits and how construction and
 ``compare_exchange`` operations are effected by the value of
 those padding bits.
 
 This is less of a concern for ``atomic_ref<T>`` because the
-of the referenced object is not constructed and is unchanged
+referenced object is not constructed and is unchanged
 by the construction of an ``atomic_ref<T>`` object.
 In regard to the ``compare_exchange`` operations, the 
 ``atomic_ref<T>`` capability does not introduce additional
