@@ -1,9 +1,9 @@
 ===================================================================
-P0019r6 : Atomic View
+P0019r7 : Atomic Ref
 ===================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
-:Number: P0019r6
+:Number: P0019r7
 :Date: 2018-02-11
 :Reply-to: hcedwar@sandia.gov
 :Author: H\. Carter Edwards
@@ -12,6 +12,10 @@ P0019r6 : Atomic View
 :Contact: hboehm@google.com
 :Author: Olivier Giroux
 :Contact: ogiroux@nvidia.com
+:Author: Daniel Sunerland
+:Contact: dsunder@sandia.gov
+:Author: Mark Hoemmen
+:Contact: mhoemme@sandia.gov
 :Author: James Reus
 :Contact: reus1@llnl.gov
 :Audience: Library (LWG)
@@ -88,6 +92,14 @@ P0019r6 : for 2018-03-Jacksonville
       a struct containing padding bits
 
     - With these revisions move to LWG
+    
+------------------------------------------------------------------
+P0019r7
+------------------------------------------------------------------
+
+  - Update to reference resolution of padding bits from P0528r2
+  - Add a note clarifying that ``atomic_ref`` may not be lock free 
+    even if ``atomic`` is lock free
 
 ******************************************************************
 Overview / Motivation / Discussion
@@ -96,7 +108,7 @@ Overview / Motivation / Discussion
 This paper proposes an extension to the atomic operations library [atomics]
 for atomic operations applied to non-atomic objects.
 As required by [atomics.types.generic] 20.5p1 the value type **T**
-must be trivially copiable.
+must be trivially copyable.
 This paper includes *atomic floating point* capability defined in P0020r5.
 
 ---------------------------------------------------------------
@@ -104,7 +116,7 @@ Motivation: Atomic Operations on a Single Non-atomic Object
 ---------------------------------------------------------------
 
 An *atomic reference* is used to perform
-atomic operations on referenced non-atomic object.
+atomic operations on a referenced non-atomic object.
 The intent is for *atomic reference* to provide the best-performing
 implementation of atomic operations for the non-atomic object type.
 All atomic operations performed through an *atomic reference*
@@ -116,8 +128,8 @@ to directly update the referenced object.
 An *atomic reference constructor* may acquire a resource,
 such as a lock from a collection of address-sharded locks,
 to perform atomic operations.
-Such *atomic reference* objects are not lock-free and not address-free.
-When such a resource is necessary subsequent
+Such *atomic reference* objects are not lock free and not address free.
+When such a resource is necessary, subsequent
 copy and move constructors and assignment operators
 may reduce overhead by copying or moving the previously
 acquired resource as opposed to re-acquiring that resource.
@@ -134,7 +146,7 @@ would incur an unnecessary performance penalty.
 Motivation: Atomic Operations on Members of a Very Large Array
 ---------------------------------------------------------------
 
-High performance computing (HPC) applications use very large arrays.
+High-performance computing (HPC) applications use very large arrays.
 Computations with these arrays typically have distinct phases that
 allocate and initialize members of the array,
 update members of the array,
@@ -157,14 +169,18 @@ for the members of the array.
 *Reference-ability* Constraints
 ---------------------------------------------------------------
 
-An object referenced by an *atomic reference* must satisfy,
-possibly architecuture specific, constraints.
-For example that the object is properly aligned in memory
-or does not reside in GPU register memory.
+An object referenced by an *atomic reference* must satisfy
+possibly architecture-specific constraints.
+For example, the object might need to be properly aligned in memory
+or may not be allowed to reside in GPU register memory.
 We do not enumerate all potential constraints or
 specify behavior when these constraints are violated.
-It is quality-of-implementation to generate appropriate
+It is a quality-of-implementation issue to generate appropriate
 information when constraints are violated.
+
+Note: Whether an implementation of ``atomic<T>`` is lock free, 
+does not necessarily constrain whether the corresponding 
+implementation of ``atomic_ref<T>`` is lock free.
 
 ---------------------------------------------------------------
 Concern with ``atomic<T>`` and padding bits in ``T``
@@ -173,14 +189,8 @@ Concern with ``atomic<T>`` and padding bits in ``T``
 A concern has been discussed for ``atomic<T>`` where ``T`` is a
 class type that contains padding bits and how construction and
 ``compare_exchange`` operations are effected by the value of
-those padding bits.
-
-This is less of a concern for ``atomic_ref<T>`` because the
-referenced object is not constructed and is unchanged
-by the construction of an ``atomic_ref<T>`` object.
-In regard to the ``compare_exchange`` operations, the 
-``atomic_ref<T>`` capability does not introduce additional
-effects to existing concerns with ``atomic<T>``.
+those padding bits.  We require that the resolution of padding
+bits follow P0528r2.
 
 ******************************************************************
 Proposal
