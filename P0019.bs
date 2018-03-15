@@ -44,7 +44,7 @@ Revision History
 -   `2017-11-07 Albuquerque LEWG review
     <http://wiki.edg.com/bin/view/Wg21albuquerque/P0019>`
     
-    -   Settle on name **atomic_ref**
+    -   Settle on name `atomic_ref`
     
     -   Split out atomic_ref<T[]> into a separate paper,
         apply editorial changes accordingly
@@ -55,7 +55,7 @@ Revision History
     
     -   Remove *wrapping* terminology
     
-    -   Address problem of CAS on atomic_ref<T> where T is
+    -   Address problem of CAS on `atomic_ref<T>` where `T` is
         a struct containing padding bits
 	
     -   With these revisions move to LWG
@@ -68,16 +68,16 @@ Revision History
     -   Merge in P0440 Floating Point Atomic View because LEWG
         consensus to move P0020 Floating Point Atomic to C++20 IS
 	
-    -   Rename from **atomic_view** and **atomic_array_view**;
-        authors' selection **atomic_ref<T>** and **atomic_ref<T[]>**,
-        other name suggested **atomic_wrapper**.
+    -   Rename from `atomic_view` and `atomic_array_view`;
+        authors' selection `atomic_ref<T>` and `atomic_ref<T[]>`,
+        other name suggested `atomic_wrapper`.
 	
-    -   Remove **constexpr** qualification from default constructor
+    -   Remove `constexpr` qualification from default constructor
         because this qualification constrains implementations and
         does not add apparent value.
 	
 -   Remove default constructor, copy constructor, and assignment operator
-    for tighter alignment with **atomic<T>** and prevent empty references.
+    for tighter alignment with `atomic<T>` and prevent empty references.
     
 -   Revise syntax to align with [[P0558r1]], Resolving atomic<T>
     base class inconsistencies
@@ -96,7 +96,7 @@ Revision History
   
 -   Align proposal with content of corresponding sections in N5131, 2016-07-15.
 
--   Remove the *one root wrapping constructor* requirement from **atomic_array_view**.
+-   Remove the *one root wrapping constructor* requirement from `atomic_array_view`.
 
 -   Other minor revisions responding to feedback from SG1 @ Oulu.
 
@@ -159,13 +159,6 @@ to members which must be guarded by atomic operations.
 Parallel algorithms with read-only access require best-performing
 streaming read access, random read access, vectorization,
 or other guaranteed non-conflicting HPC pattern.
-
-An *atomic array reference* is used to perform
-atomic operations on the non-atomic members of the referenced array.
-The intent is for *atomic array reference* to provide the
-best-performing implementation of atomic operations
-for the members of the array.  
-
 
 *Reference-ability* Constraints
 ===============================
