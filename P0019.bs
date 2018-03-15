@@ -29,7 +29,7 @@ Revision History
 
 ## [[P0019r3]]
   
--   Align proposal with content of corresponding sections in [[N5131]], 2016-07-15.
+-   Align proposal with content of corresponding sections in N5131, 2016-07-15.
 
 -   Remove the *one root wrapping constructor* requirement from **atomic_array_view**.
 
