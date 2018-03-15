@@ -49,42 +49,42 @@ Revision History
 
     -   Merge in P0440 Floating Point Atomic View because LEWG
         consensus to move P0020 Floating Point Atomic to C++20 IS
-
+	
     -   Rename from **atomic_view** and **atomic_array_view**;
         authors' selection **atomic_ref<T>** and **atomic_ref<T[]>**,
         other name suggested **atomic_wrapper**.
-
+	
     -   Remove **constexpr** qualification from default constructor
         because this qualification constrains implementations and
         does not add apparent value.
-
+	
 -   Remove default constructor, copy constructor, and assignment operator
     for tighter alignment with **atomic<T>** and prevent empty references.
-
+    
 -   Revise syntax to align with [[P0558r1]], Resolving atomic<T>
     base class inconsistencies
-
+    
 -   Recommend feature next macro
 
 ## [[P0019r6]]
 
 -   `2017-11-07 Albuquerque LEWG review
-    <http://wiki.edg.com/bin/view/Wg21albuquerque/P0019>`_
-
+    <http://wiki.edg.com/bin/view/Wg21albuquerque/P0019>`
+    
     -   Settle on name **atomic_ref**
-
+    
     -   Split out atomic_ref<T[]> into a separate paper,
         apply editorial changes accordingly
-
+	
     -   Restore copy constructor; not assignment operator
-
+    
     -   add **Throws: Nothing** to constructor but do not add noexcept
-
+    
     -   Remove *wrapping* terminology
-
+    
     -   Address problem of CAS on atomic_ref<T> where T is
         a struct containing padding bits
-
+	
     -   With these revisions move to LWG
     
 ## [[P0019r7]]
@@ -190,7 +190,14 @@ bits follow [[P0528r2]].
 Proposal
 ========
 
-## Add to Header <atomic> synopsis
+The proposed changes are relative to the working draft of the standard
+as of [[N4727]].  Any behavior of `atomic_ref<T>` (see below) members
+behaves as `atomic<T>` unless stated otherwise.
+
+The � character is used to denote a placeholder section number which
+the editor shall determine.
+
+Apply the following changes to 32.2.� [atomics.syn]:
   
 ```c++
 namespace std {
@@ -198,12 +205,12 @@ namespace experimental {
 inline namespace concurrency_v2 {
 
 template< class T > struct atomic_ref ;
-template< class T > struct atomic_ref< T \* >;
+template< class T > struct atomic_ref< T * >;
 
 }}}
 ```
 
-## Add section to Class template atomic
+Apply the following changes to 32.6.� [atomics.types.generic]:
 
 ```c++
 template< class T > struct atomic_ref {
@@ -231,18 +238,19 @@ template< class T > struct atomic_ref {
 };
 ```
 
+<blockquote>
 **static constexpr size_t required_alignment =** *implementation-defined* **;**
 
   The required alignment of an object to be referenced by an atomic reference,
   which is at least `alignof(T)`.
-  [Note: An architecture may support lock-free atomic operations
+
+  [*Note:* An architecture may support lock-free atomic operations
   on objects of type *T* only if those objects meet a required
   alignment.  The intent is for *atomic_ref* to provide lock-free
   atomic operations whenever possible. 
   For example, an architecture may be able to support lock-free
   operations on `std::complex<double>` only if aligned to
-  `2*alignof(double)` and not `alignof(double)` . - end note]
-
+  `2*alignof(double)` and not `alignof(double)` . - *end note*]
 
 **atomic_ref( T & obj );**
 
@@ -253,7 +261,7 @@ template< class T > struct atomic_ref {
 
   *Requires:* The referenced non-atomic object shall be
   aligned to `required_alignment`.
-  The lifetime (3.8) of `*this`
+  The lifetime (6.8) of `*this`
   shall not exceed the lifetime of the referenced non-atomic object.
   While any `atomic_ref` instance exists that references the object
   all accesses of that object shall exclusively occur through those
@@ -264,13 +272,15 @@ template< class T > struct atomic_ref {
 
   *Throws:* Nothing
 
-  *Effects:* `*this` references the non-atomic object*
-  [Note: The constructor may acquire a shared resource,
+  *Effects:* `*this` references the non-atomic object*.
+  
+  [*Note*: The constructor may acquire a shared resource,
   such as a lock associated with the referenced object,
   to enable atomic operations applied to the referenced
-  non-atomic object. - end note]
+  non-atomic object. - *end note*]
+</blockquote>
 
-## Add to Specializations for integers
+Apply the following changes to 32.6.2.� [atomics.types.int]:
 
 ```c++
 template<> struct atomic_ref< *integral* > {
@@ -315,7 +325,7 @@ template<> struct atomic_ref< *integral* > {
 };
 ```
 
-## Add to Specializations for floating-points
+Apply the following changes to 32.6.3.� [atomics.types.float]:
 
 ```c++
 
@@ -351,7 +361,7 @@ template<> struct atomic_ref< *floating-point* > {
 };
 ```
 
-## Add to Partial specializations for pointers [**atomics.types.pointer**]
+Apply the following changes to 32.6.4.� [atomics.types.pointer]:
 
 ```c++
 template<class T> struct atomic_ref< T * > {
@@ -390,8 +400,7 @@ template<class T> struct atomic_ref< T * > {
 };
 ```
 
-## Recommended feature test macro
+Feature Testing {#test}
+===============
 
-```c++
-__cpp_lib_atomic_ref
-```
+The `__cpp_lib_atomic_ref` feature test macro should be added.
