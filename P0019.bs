@@ -47,7 +47,7 @@ Revision History
 
 -   2017-03-01 Kona LEWG review
 
-    -   Merge in [[P0440]] Floating Point Atomic View because LEWG
+    -   Merge in P0440 Floating Point Atomic View because LEWG
         consensus to move P0020 Floating Point Atomic to C++20 IS
 
     -   Rename from **atomic_view** and **atomic_array_view**;
