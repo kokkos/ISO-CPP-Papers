@@ -70,14 +70,14 @@ it may remain an abstract concept.
 
 
 This paper focuses on those domains where a concrete Execution Context
-is extermemly important while also proposing a mechanism for defining
+is extremely important while also proposing a mechanism for defining
 the system affinity.
 
 Another area of interest that can be supported by Context
 is the querying of the memory affinity status of the system.
 This is important as a concept to enable future support for
 affinity (see the Affinity paper). This is an area that
-requires solution and this papers outlines one such direction.
+requires a solution and this papers outlines one such direction.
 
 
 ******************************************************************
@@ -99,7 +99,7 @@ One or more types of executors may submit work to the same
 execution context.
 Work submitted to an execution context is **incomplete** until
 (1) it is invoked and exits execution by return or exception or 
-(2) its submission for execution is cancelled.
+(2) its submission for execution is canceled.
 
     Note: The *execution context* terminology used here
     and in the Networking TS (N4656) deviate from the 
@@ -126,7 +126,7 @@ each with particular semantics.
 Differences between our proposed parallelism and concurrency execution context
 and the networking execution context include the following.
 
-  #.  Networking context is Limited to executing work, as opposed to providing unspecified services.
+  #.  Networking context is limited to executing work, as opposed to providing unspecified services.
 
   #.  Networking context is not a concrete base class from which other forms of execution contexts
       are derived; *e.g.*, ``system_context`` , ``io_context`` .
@@ -184,7 +184,7 @@ defining the desired affinity for being on the same Place as master thread, or s
 as well as compacting it around the Master. It can also define for each nested parallelism level,
 because the work may change or become irregular during runtime. 
 
-This design, while flexible is not possible for C++ Affinty. C++ cannot use the environment variable for input configuration.
+This design, while flexible is not possible for C++ Affinity. C++ cannot use the environment variable for input configuration.
 The advantage of the OpenMP design is its use of abstract places which makes it flexible for some future core configuration
 but it means the programmer has to decide whether to describe the places 
 in terms of threads, cores, or sockets which still requires some actual hardware knowledge. 
