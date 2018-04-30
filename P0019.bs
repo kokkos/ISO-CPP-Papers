@@ -220,63 +220,63 @@ template< class T > struct atomic_ref< T * >;
 
 // 3.�, non-member atomic ref functions
 template<class T>
-      bool atomic_is_lock_free(const atomic_ref<T> &) noexcept;
+      bool atomic_is_lock_free(const atomic_ref<T> *) noexcept;
 template<class T>
-      void atomic_store(atomic_ref<T> &, typename atomic_ref<T>::value_type) noexcept;
+      void atomic_store(atomic_ref<T> *, typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  void atomic_store_explicit(atomic_ref<T> &, typename atomic_ref<T>::value_type,
+  void atomic_store_explicit(atomic_ref<T> *, typename atomic_ref<T>::value_type,
                              memory_order) noexcept;
 template<class T>
-  T atomic_load(const atomic_ref<T> &) noexcept;
+  T atomic_load(const atomic_ref<T> *) noexcept;
 template<class T>
-  T atomic_load_explicit(const atomic_ref<T> &, memory_order) noexcept;
+  T atomic_load_explicit(const atomic_ref<T> *, memory_order) noexcept;
 template<class T>
-  T atomic_exchange(atomic_ref<T> &, typename atomic_ref<T>::value_type) noexcept;
+  T atomic_exchange(atomic_ref<T> *, typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  T atomic_exchange_explicit(atomic_ref<T> &, typename atomic_ref<T>::value_type,
+  T atomic_exchange_explicit(atomic_ref<T> *, typename atomic_ref<T>::value_type,
                              memory_order) noexcept;
 template<class T>
-  bool atomic_compare_exchange_weak(atomic_ref<T> &,
+  bool atomic_compare_exchange_weak(atomic_ref<T> *,
                                     typename atomic_ref<T>::value_type*,
                                     typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  bool atomic_compare_exchange_strong(atomic_ref<T> &,
+  bool atomic_compare_exchange_strong(atomic_ref<T> *,
                                       typename atomic_ref<T>::value_type*,
                                       typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  bool atomic_compare_exchange_weak_explicit(atomic_ref<T> &,
+  bool atomic_compare_exchange_weak_explicit(atomic_ref<T> *,
                                              typename atomic_ref<T>::value_type*,
                                              typename atomic_ref<T>::value_type,
                                              memory_order, memory_order) noexcept;
 template<class T>
-  bool atomic_compare_exchange_strong_explicit(atomic_ref<T> &,
+  bool atomic_compare_exchange_strong_explicit(atomic_ref<T> *,
                                                typename atomic_ref<T>::value_type*,
                                                typename atomic_ref<T>::value_type,
                                                memory_order, memory_order) noexcept;
 template<class T>
-  T atomic_fetch_add(atomic_ref<T> &, typename atomic_ref<T>::difference_type) noexcept;
+  T atomic_fetch_add(atomic_ref<T> *, typename atomic_ref<T>::difference_type) noexcept;
 template<class T>
-  T atomic_fetch_add_explicit(atomic_ref<T> &, typename atomic_ref<T>::difference_type,
+  T atomic_fetch_add_explicit(atomic_ref<T> *, typename atomic_ref<T>::difference_type,
                               memory_order) noexcept;
 template<class T>
-  T atomic_fetch_sub(atomic_ref<T> &, typename atomic_ref<T>::difference_type) noexcept;
+  T atomic_fetch_sub(atomic_ref<T> *, typename atomic_ref<T>::difference_type) noexcept;
 template<class T>
-  T atomic_fetch_sub_explicit(atomic_ref<T> &, typename atomic_ref<T>::difference_type,
+  T atomic_fetch_sub_explicit(atomic_ref<T> *, typename atomic_ref<T>::difference_type,
                               memory_order) noexcept;
 template<class T>
-  T atomic_fetch_and(atomic_ref<T> &, typename atomic_ref<T>::value_type) noexcept;
+  T atomic_fetch_and(atomic_ref<T> *, typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  T atomic_fetch_and_explicit(atomic_ref<T> &, typename atomic_ref<T>::value_type,
+  T atomic_fetch_and_explicit(atomic_ref<T> *, typename atomic_ref<T>::value_type,
                               memory_order) noexcept;
 template<class T>
-  T atomic_fetch_or(atomic_ref<T> &, typename atomic_ref<T>::value_type) noexcept;
+  T atomic_fetch_or(atomic_ref<T> *, typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  T atomic_fetch_or_explicit(atomic_ref<T> &, typename atomic_ref<T>::value_type,
+  T atomic_fetch_or_explicit(atomic_ref<T> *, typename atomic_ref<T>::value_type,
                              memory_order) noexcept;
 template<class T>
-  T atomic_fetch_xor(atomic_ref<T> &, typename atomic_ref<T>::value_type) noexcept;
+  T atomic_fetch_xor(atomic_ref<T> *, typename atomic_ref<T>::value_type) noexcept;
 template<class T>
-  T atomic_fetch_xor_explicit(atomic_ref<T> &, typename atomic_ref<T>::value_type,
+  T atomic_fetch_xor_explicit(atomic_ref<T> *, typename atomic_ref<T>::value_type,
                               memory_order) noexcept;
 }}}
 ```
@@ -363,7 +363,7 @@ Add a new subsection [atomics.ref.operations] to [atomics.ref.generic]
 
   *Throws:* Nothing.
 
-  *Remarks: The lifetime (6.8) of `*this` shall not exceed the lifetime of the
+  *Remarks:* The lifetime (6.8) of `*this` shall not exceed the lifetime of the
   referenced non-atomic object.  While any `atomic_ref` instance exists that
   references the object all accesses of that object shall exclusively occur
   through those `atomic_ref` instances.
@@ -473,7 +473,7 @@ Add a new subsection [atomics.ref.operations] to [atomics.ref.generic]
   conforming to ISO/IEC/IEEE 60559, floating-point -0.0 and +0.0 will not
   compare equal with memcmp but will compare equal with operator==, and NaNs
   with the same payload will compare equal with memcmp but will not compare
-  equal with operator==. — end note ]
+  equal with operator==. — *end note* ]
 
 
 <blockquote>
