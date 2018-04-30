@@ -1566,10 +1566,9 @@ for tighter alignment with <code class="highlight"><span class="n">atomic</span>
 to allow atomic operations to apply to non-atomic objects.  As required by
 [<strong>atomics.types.generic</strong>] the value type <strong>T</strong> must be trivially copyable.</p>
    <p>This paper includes <em>atomic floating point</em> capability defined in <a data-link-type="biblio" href="#biblio-p0020r5">[P0020r5]</a>.</p>
-   <p>[ Note: Recent versions of gcc, intel, clang, pgi, xl, and cray already support
+   <p class="note" role="note"><span>Note:</span> Recent versions of gcc, intel, clang, pgi, xl, and cray already support
 this capability through the use of gnu atomic builtin functions (excluding 
-the floating point specialiation)
-https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html. --end note ]</p>
+the floating point specialiation) <a href="https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html">GNU Atomic Builtins</a>. --end note</p>
    <h2 class="heading settled" data-level="3" id="motivation"><span class="secno">3. </span><span class="content">Motivation</span><a class="self-link" href="#motivation"></a></h2>
    <h3 class="heading settled" data-level="3.1" id="atomic-operations-on-a-single-non-atomic-object"><span class="secno">3.1. </span><span class="content">Atomic Operations on a Single Non-atomic Object</span><a class="self-link" href="#atomic-operations-on-a-single-non-atomic-object"></a></h3>
    <p>An <em>atomic reference</em> is used to perform atomic operations on a referenced
@@ -1797,12 +1796,12 @@ shall determine. </blockquote>
    <p>Returns: Atomically returns the value pointed to by <code class="highlight"><span class="n">ptr_</span></code> immediately before
   the effects.</p>
    <p><strong>bool compare_exchange_weak(T&amp; expected, T desired,
-                           memory_order success, memory_order failure) const noexcept ;
-bool compare_exchange_strong(T&amp; expected, T desired,
-                             memory_order success, memory_order failure) const noexcept ;
-bool compare_exchange_weak(T&amp; expected, T desired,
-                           memory_order order = memory_order::seq_cst) const noexcept ;
-bool compare_exchange_strong(T&amp; expected, T desired,
+                           memory_order success, memory_order failure) const noexcept ;</strong></p>
+   <p><strong>bool compare_exchange_strong(T&amp; expected, T desired,
+                             memory_order success, memory_order failure) const noexcept ;</strong></p>
+   <p><strong>bool compare_exchange_weak(T&amp; expected, T desired,
+                           memory_order order = memory_order::seq_cst) const noexcept ;</strong></p>
+   <p><strong>bool compare_exchange_strong(T&amp; expected, T desired,
                              memory_order order = memory_order::seq_cst) const noexcept ;</strong></p>
    <p><em>Requires:</em> The failure argument shall not be memory_order::release nor
   memory_order::acq_rel.</p>
